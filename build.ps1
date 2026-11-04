@@ -62,6 +62,7 @@ $compilerArguments += @(
     (Join-Path $projectRoot 'WinMmAudio.cs')
     (Join-Path $projectRoot 'RealtimeVoiceSession.cs')
     (Join-Path $projectRoot 'MainWindowVoice.cs')
+    (Join-Path $projectRoot 'StarterWorkspace.cs')
     (Join-Path $projectRoot 'Properties\AssemblyInfo.cs')
 )
 

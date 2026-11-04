@@ -2,7 +2,7 @@
 param(
     [string]$RuntimeSource,
     [string]$GitHubRepository,
-    [string]$Version = '0.4.0',
+    [string]$Version = '0.4.1',
     [switch]$Zip,
     [switch]$SkipInstaller
 )

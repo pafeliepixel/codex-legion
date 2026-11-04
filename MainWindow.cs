@@ -322,7 +322,7 @@ namespace CodexNativeLite
             projectPanel.Children.Add(Label("PROJECT", 0));
             _project = new TextBlock
             {
-                Text = "No project yet\nPick a folder to start",
+                Text = "Fresh start\nType below or choose a folder",
                 Foreground = MutedBrush,
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 12,
@@ -480,6 +480,7 @@ namespace CodexNativeLite
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 Background = Brushes.Transparent,
                 Foreground = TextBrush,
+                CaretBrush = Brush("#FFB4A8"),
                 BorderThickness = new Thickness(0),
                 Padding = new Thickness(14, 12, 14, 8),
                 FontSize = 14,
@@ -599,12 +600,13 @@ namespace CodexNativeLite
             }
             if (String.IsNullOrWhiteSpace(_workingDirectory) || !Directory.Exists(_workingDirectory))
             {
-                _thread.Text = "Pick a folder";
+                _thread.Text = "New chat";
                 _thread.ToolTip = null;
-                _composer.IsEnabled = false;
-                _sendButton.IsEnabled = false;
+                _composer.IsEnabled = true;
+                _sendButton.IsEnabled = true;
                 ShowProjectPickerView();
-                SetStatus("Pick a folder", false);
+                SetStatus("Ready ✦", false);
+                _composer.Focus();
                 return;
             }
             try
@@ -633,13 +635,6 @@ namespace CodexNativeLite
         {
             string text = _composer.Text.Trim();
             if (!_authenticated || String.IsNullOrWhiteSpace(text) || _client == null || !_client.IsRunning) return;
-            if (String.IsNullOrWhiteSpace(_workingDirectory) || !Directory.Exists(_workingDirectory))
-            {
-                ShowProjectPickerView();
-                SetStatus("Pick a folder", false);
-                return;
-            }
-
             if (_busy && !String.IsNullOrWhiteSpace(_client.ActiveTurnId))
             {
                 try
@@ -656,6 +651,14 @@ namespace CodexNativeLite
             SetBusy(true);
             try
             {
+                if (String.IsNullOrWhiteSpace(_workingDirectory) || !Directory.Exists(_workingDirectory))
+                {
+                    SetStatus("Making a workspace…", false);
+                    _workingDirectory = StarterWorkspace.Create();
+                    UpdateProjectDisplay();
+                    _messages.Children.Clear();
+                    AddWelcome();
+                }
                 if (String.IsNullOrWhiteSpace(_client.ThreadId))
                 {
                     SetStatus("Starting…", false);
@@ -981,7 +984,7 @@ namespace CodexNativeLite
             });
             panel.Children.Add(new TextBlock
             {
-                Text = "Pick a folder.",
+                Text = "Start with an idea.",
                 FontSize = 29,
                 FontWeight = FontWeights.SemiBold,
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -989,16 +992,16 @@ namespace CodexNativeLite
             });
             panel.Children.Add(new TextBlock
             {
-                Text = "That’s where we’ll work.",
+                Text = "Type below and Legion will make a workspace, or bring a folder you already have.",
                 Foreground = MutedBrush,
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 13,
                 LineHeight = 21,
                 Margin = new Thickness(0, 13, 0, 24)
             });
-            var choose = MakeButton("Choose folder  ↗", true);
+            var choose = MakeButton("Use an existing folder  ↗", true);
             choose.HorizontalAlignment = HorizontalAlignment.Left;
-            choose.MinWidth = 200;
+            choose.MinWidth = 230;
             choose.Click += ChooseFolder;
             panel.Children.Add(choose);
             var pickerCard = new Border
@@ -1403,7 +1406,7 @@ namespace CodexNativeLite
         private void UpdateProjectDisplay()
         {
             bool selected = !String.IsNullOrWhiteSpace(_workingDirectory) && Directory.Exists(_workingDirectory);
-            _project.Text = selected ? ShortPath(_workingDirectory) : "No project yet\nPick a folder to start";
+            _project.Text = selected ? ShortPath(_workingDirectory) : "Fresh start\nType below or choose a folder";
             _project.Foreground = selected ? TextBrush : MutedBrush;
             _project.ToolTip = selected ? _workingDirectory : null;
         }
@@ -1584,12 +1587,12 @@ namespace CodexNativeLite
         private void SetBusy(bool busy)
         {
             _busy = busy;
-            bool projectReady = !String.IsNullOrWhiteSpace(_workingDirectory) && Directory.Exists(_workingDirectory);
-            _sendButton.IsEnabled = _authenticated && projectReady;
+            bool canCompose = _authenticated && _profileSecurity.HasPin;
+            _sendButton.IsEnabled = canCompose;
             _sendButton.Content = busy ? "↗" : "↑";
             _stopButton.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
-            _composer.IsEnabled = _authenticated && projectReady;
-            if (!busy && _authenticated && projectReady) _composer.Focus();
+            _composer.IsEnabled = canCompose;
+            if (!busy && canCompose) _composer.Focus();
         }
 
         private void SetStatus(string text, bool error)

@@ -32,6 +32,20 @@ namespace CodexNativeLite
     {
         private readonly JavaScriptSerializer _json = new JavaScriptSerializer();
 
+        public bool HasReleaseChannel
+        {
+            get
+            {
+                try
+                {
+                    Dictionary<string, object> channel = ReadChannel();
+                    string repository = ReadString(channel, "repository");
+                    return !String.IsNullOrWhiteSpace(repository) && repository.IndexOf('/') > 0;
+                }
+                catch { return false; }
+            }
+        }
+
         public Task<UpdateCheckResult> CheckAsync()
         {
             return Task.Factory.StartNew((Func<UpdateCheckResult>)Check, TaskCreationOptions.LongRunning);

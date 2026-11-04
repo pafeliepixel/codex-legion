@@ -57,6 +57,7 @@
     <Compile Include="WinMmAudio.cs" />
     <Compile Include="RealtimeVoiceSession.cs" />
     <Compile Include="MainWindowVoice.cs" />
+    <Compile Include="StarterWorkspace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

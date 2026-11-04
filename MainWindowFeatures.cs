@@ -760,7 +760,12 @@ namespace CodexNativeLite
                 List<SkillOption> skills = await _client.ListSkillsAsync(_workingDirectory, false);
                 var choices = new List<ChoiceItem>();
                 foreach (SkillOption skill in skills)
-                    if (skill.Enabled) choices.Add(new ChoiceItem(skill.Path, "$" + skill.Name, skill.Description, skill.Name));
+                    if (skill.Enabled) choices.Add(new ChoiceItem(
+                        skill.Path,
+                        FriendlySkillName(skill.Name),
+                        skill.Description,
+                        skill.Name,
+                        SkillIcon(skill.Name)));
                 string path = await ShowChoiceAsync("Skills", choices.Count == 0 ? "No enabled skills found." : "Pick one for this message.", choices);
                 if (String.IsNullOrWhiteSpace(path)) { SetStatus("Ready ✦", false); return; }
                 SkillOption selected = skills.Find(delegate(SkillOption s) { return s.Path == path; });
@@ -791,10 +796,10 @@ namespace CodexNativeLite
             {
                 new ChoiceItem("git", "Git snapshot", "Branch and changed files."),
                 new ChoiceItem("worktree", "New worktree", "Create an isolated Git worktree."),
-                new ChoiceItem("skills", "Skills", "Browse local skills."),
-                new ChoiceItem("apps", "Apps (preview)", "See apps exposed by this Codex runtime."),
-                new ChoiceItem("updates", "Check for updates", "Install the newest GitHub release.")
+                new ChoiceItem("skills", "Skills", "Browse local skills.")
             };
+            if (_updates.HasReleaseChannel)
+                choices.Add(new ChoiceItem("updates", "Check for updates", "Install the newest GitHub release."));
             if (_client != null && !String.IsNullOrWhiteSpace(_client.ThreadId))
             {
                 choices.Insert(0, new ChoiceItem("rename", "Rename chat", "Give this conversation a name."));
@@ -870,7 +875,6 @@ namespace CodexNativeLite
                 else if (action == "git") await ShowGitSnapshotAsync();
                 else if (action == "worktree") await CreateWorktreeAsync();
                 else if (action == "skills") await BrowseSkillsAsync();
-                else if (action == "apps") await BrowseAppsAsync();
                 else if (action == "updates") await CheckForUpdatesAsync();
             }
             catch (Exception ex)
@@ -914,20 +918,13 @@ namespace CodexNativeLite
             List<SkillOption> skills = await _client.ListSkillsAsync(_workingDirectory, true);
             var choices = new List<ChoiceItem>();
             foreach (SkillOption skill in skills)
-                choices.Add(new ChoiceItem(skill.Path, (skill.Enabled ? "$" : "Disabled · $") + skill.Name, skill.Description));
+                choices.Add(new ChoiceItem(
+                    skill.Path,
+                    (skill.Enabled ? "" : "Disabled · ") + FriendlySkillName(skill.Name),
+                    skill.Description,
+                    skill.Name,
+                    SkillIcon(skill.Name)));
             await ShowChoiceAsync("Skills", choices.Count == 0 ? "No skills found." : skills.Count + " available", choices);
-        }
-
-        private async Task BrowseAppsAsync()
-        {
-            List<AppOption> apps = await _client.ListAppsAsync();
-            var choices = new List<ChoiceItem>();
-            foreach (AppOption app in apps)
-                choices.Add(new ChoiceItem(app.Id, app.Name + (app.Accessible ? " · ready" : " · not linked"), app.Description));
-            string id = await ShowChoiceAsync("Apps · preview", choices.Count == 0 ? "No apps exposed by this runtime." : "Discovery is available; install flows remain server-controlled.", choices);
-            if (String.IsNullOrWhiteSpace(id)) return;
-            AppOption selected = apps.Find(delegate(AppOption a) { return a.Id == id; });
-            if (selected != null) await ShowPromptAsync(selected.Name, selected.Description ?? "No description.", "Done", "Close", false);
         }
 
         private async Task CheckForUpdatesAsync()
@@ -989,8 +986,46 @@ namespace CodexNativeLite
             foreach (ChoiceItem choice in choices)
             {
                 var row = new StackPanel();
-                row.Children.Add(new TextBlock { Text = choice.Label, FontWeight = FontWeights.SemiBold, Foreground = TextBrush });
-                if (!String.IsNullOrWhiteSpace(choice.Description)) row.Children.Add(new TextBlock { Text = choice.Description, Foreground = MutedBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) });
+                var titleRow = new StackPanel { Orientation = Orientation.Horizontal };
+                if (!String.IsNullOrWhiteSpace(choice.Icon))
+                {
+                    titleRow.Children.Add(new Border
+                    {
+                        Width = 27,
+                        Height = 27,
+                        CornerRadius = new CornerRadius(9, 4, 9, 4),
+                        Background = Brush("#302641"),
+                        BorderBrush = Brush("#55416F"),
+                        BorderThickness = new Thickness(1),
+                        Margin = new Thickness(0, 0, 10, 0),
+                        Child = new TextBlock
+                        {
+                            Text = choice.Icon,
+                            Foreground = CoralBrush,
+                            FontSize = choice.Icon.Length > 2 ? 8 : 13,
+                            FontWeight = FontWeights.Bold,
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center
+                        }
+                    });
+                }
+                titleRow.Children.Add(new TextBlock
+                {
+                    Text = choice.Label,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = TextBrush,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap
+                });
+                row.Children.Add(titleRow);
+                if (!String.IsNullOrWhiteSpace(choice.Description)) row.Children.Add(new TextBlock
+                {
+                    Text = choice.Description,
+                    Foreground = MutedBrush,
+                    FontSize = 11,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(String.IsNullOrWhiteSpace(choice.Icon) ? 0 : 37, 3, 0, 0)
+                });
                 var button = MakeButton("", false);
                 button.Content = row;
                 button.Tag = choice.Key;
@@ -1089,16 +1124,66 @@ namespace CodexNativeLite
             return Char.ToUpperInvariant(value[0]) + value.Substring(1).Replace('-', ' ');
         }
 
+        private static string FriendlySkillName(string value)
+        {
+            if (String.IsNullOrWhiteSpace(value)) return "Unnamed Skill";
+            string name = value.Trim().TrimStart('$');
+            int namespaceSeparator = name.LastIndexOf(':');
+            if (namespaceSeparator >= 0 && namespaceSeparator + 1 < name.Length)
+                name = name.Substring(namespaceSeparator + 1);
+            if (name.StartsWith("artifact-template-", StringComparison.OrdinalIgnoreCase))
+                name = name.Substring("artifact-template-".Length);
+
+            string lower = name.ToLowerInvariant();
+            if (lower == "openai-docs") return "OpenAI Docs";
+            if (lower == "imagegen") return "Image Creator";
+            if (lower == "pdf") return "PDF Tools";
+            if (lower == "computer-use") return "Computer Control";
+            if (lower == "excel-live-control") return "Excel Live Control";
+
+            string[] words = name.Replace('_', '-').Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+            var builder = new StringBuilder();
+            foreach (string word in words)
+            {
+                if (builder.Length > 0) builder.Append(' ');
+                string normalized = word.ToLowerInvariant();
+                if (normalized == "api" || normalized == "mcp" || normalized == "pdf" || normalized == "ui")
+                    builder.Append(normalized.ToUpperInvariant());
+                else if (normalized.Length > 0)
+                    builder.Append(Char.ToUpperInvariant(normalized[0])).Append(normalized.Substring(1));
+            }
+            return builder.Length == 0 ? "Unnamed Skill" : builder.ToString();
+        }
+
+        private static string SkillIcon(string value)
+        {
+            string name = (value ?? "").ToLowerInvariant();
+            if (name.Contains("analytics") || name.Contains("dashboard") || name.Contains("spreadsheet") || name.Contains("excel")) return "▦";
+            if (name.Contains("business-review") || name.Contains("presentation") || name.Contains("slides")) return "▣";
+            if (name.Contains("report") || name.Contains("document") || name.Contains("docx")) return "▤";
+            if (name.Contains("experiment") || name.Contains("analysis")) return "⚗";
+            if (name.Contains("image") || name.Contains("sketch") || name.Contains("draw")) return "✦";
+            if (name.Contains("pdf")) return "PDF";
+            if (name.Contains("computer")) return "⌁";
+            if (name.Contains("calendar")) return "◷";
+            if (name.Contains("site") || name.Contains("web")) return "◇";
+            if (name.Contains("skill") || name.Contains("template")) return "✦";
+            if (name.Contains("pet")) return "◉";
+            return "◆";
+        }
+
         private sealed class ChoiceItem
         {
             public string Key { get; private set; }
             public string Label { get; private set; }
             public string Description { get; private set; }
             public string Extra { get; private set; }
-            public ChoiceItem(string key, string label, string description) : this(key, label, description, null) { }
-            public ChoiceItem(string key, string label, string description, string extra)
+            public string Icon { get; private set; }
+            public ChoiceItem(string key, string label, string description) : this(key, label, description, null, null) { }
+            public ChoiceItem(string key, string label, string description, string extra) : this(key, label, description, extra, null) { }
+            public ChoiceItem(string key, string label, string description, string extra, string icon)
             {
-                Key = key; Label = label; Description = description; Extra = extra;
+                Key = key; Label = label; Description = description; Extra = extra; Icon = icon;
             }
         }
     }
