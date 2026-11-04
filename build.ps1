@@ -32,6 +32,8 @@ $compilerArguments = @(
     "/reference:$frameworkRoot\System.Drawing.dll"
     "/reference:$frameworkRoot\System.Security.dll"
     "/reference:$frameworkRoot\System.Web.Extensions.dll"
+    "/reference:$frameworkRoot\System.Net.WebSockets.dll"
+    "/reference:$frameworkRoot\System.Net.WebSockets.Client.dll"
     "/reference:$frameworkRoot\System.Windows.Forms.dll"
     "/reference:$gacRoot\GAC_MSIL\WindowsBase\v4.0_4.0.0.0__31bf3856ad364e35\WindowsBase.dll"
     "/reference:$gacRoot\GAC_64\PresentationCore\v4.0_4.0.0.0__31bf3856ad364e35\PresentationCore.dll"
@@ -56,6 +58,10 @@ $compilerArguments += @(
     (Join-Path $projectRoot 'MainWindow.cs')
     (Join-Path $projectRoot 'MainWindowFeatures.cs')
     (Join-Path $projectRoot 'ProfileSecurity.cs')
+    (Join-Path $projectRoot 'VoiceCredentialStore.cs')
+    (Join-Path $projectRoot 'WinMmAudio.cs')
+    (Join-Path $projectRoot 'RealtimeVoiceSession.cs')
+    (Join-Path $projectRoot 'MainWindowVoice.cs')
     (Join-Path $projectRoot 'Properties\AssemblyInfo.cs')
 )
 

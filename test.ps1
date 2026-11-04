@@ -18,6 +18,16 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & (Join-Path $outputDirectory 'ProfileSecuritySmoke.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+& $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\VoiceCredentialStoreSmoke.exe" `
+    "/reference:$frameworkRoot\System.dll" `
+    "/reference:$frameworkRoot\System.Security.dll" `
+    (Join-Path $projectRoot 'VoiceCredentialStore.cs') `
+    (Join-Path $projectRoot 'tests\VoiceCredentialStoreSmoke.cs')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& (Join-Path $outputDirectory 'VoiceCredentialStoreSmoke.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 & $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\RuntimeSettingsSmoke.exe" `
     "/reference:$frameworkRoot\System.dll" `
     (Join-Path $projectRoot 'ProtocolModels.cs') `

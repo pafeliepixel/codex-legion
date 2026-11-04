@@ -517,6 +517,7 @@ namespace CodexNativeLite
             _modelButton.Padding = new Thickness(13, 8, 13, 8);
             _modelButton.Click += OpenModelPopover;
             rightControls.Children.Add(_modelButton);
+            rightControls.Children.Add(BuildVoiceButton());
             _sendButton = MakeButton("↑", true);
             _sendButton.Width = 42;
             _sendButton.Height = 42;
@@ -1613,6 +1614,7 @@ namespace CodexNativeLite
         private void OnClosed(object sender, EventArgs e)
         {
             _metricsTimer.Stop();
+            if (_voiceSession != null) _voiceSession.Dispose();
             try { _settingsStore.Save(_runtimeSettings); } catch { }
             if (_client != null) _client.Dispose();
             try

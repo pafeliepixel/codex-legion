@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
   <title id="title">Codex Legion interface preview</title>
-  <desc id="desc">A native dark Windows workspace with a project sidebar, conversation area, and anchored model thinking slider.</desc>
+  <desc id="desc">A native dark Windows workspace with a project sidebar, conversation area, voice button, and anchored model thinking slider.</desc>
   <defs>
     <linearGradient id="accent" x1="0" x2="1">
       <stop offset="0" stop-color="#9d7bf2"/>
@@ -61,8 +61,10 @@
   <text x="322" y="632" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="22" fill="#ddd3e6">＋</text>
   <rect x="352" y="607" width="94" height="37" rx="11" fill="#211c29" stroke="#3b3146"/>
   <text x="399" y="630" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" fill="#eee8f4">◉ Ask first</text>
-  <rect x="990" y="607" width="130" height="37" rx="11" fill="#211c29" stroke="#3b3146"/>
-  <text x="1055" y="630" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" fill="#eee8f4">GPT-6.1-Sol ⌄</text>
+  <rect x="930" y="607" width="130" height="37" rx="11" fill="#211c29" stroke="#3b3146"/>
+  <text x="995" y="630" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" fill="#eee8f4">GPT-6.1-Sol ⌄</text>
+  <circle cx="1090" cy="625" r="19" fill="#211c29" stroke="#57446d"/>
+  <path d="M1090 615a5 5 0 0 0-5 5v5a5 5 0 0 0 10 0v-5a5 5 0 0 0-5-5zm-9 10a9 9 0 0 0 18 0m-9 9v5m-5 0h10" fill="none" stroke="#f5effb" stroke-width="1.7" stroke-linecap="round"/>
   <circle cx="1145" cy="625" r="22" fill="url(#accent)"/>
   <text x="1145" y="632" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="20" fill="#1b1320">↑</text>
   <g transform="translate(780 385)" filter="url(#shadow)">

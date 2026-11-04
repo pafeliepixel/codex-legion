@@ -33,6 +33,8 @@ Codex Legion covers the everyday coding loop: persistent chats, streaming replie
 
 You can stop or steer an active turn, attach images, use local skills, inspect Git status, create managed worktrees, and reopen or organize previous chats. Approval, permission, question, and MCP prompts stay inside the same themed interface instead of falling back to generic Windows dialogs.
 
+Tap the microphone for a proper hands-free conversation—not push-to-talk. Legion listens for natural turns, speaks back, and lets you interrupt. The first tap opens a themed setup with a direct link to create an OpenAI API key. Once it connects, that key is protected for the current Windows user with DPAPI, so the next conversation is one click away. Voice usage comes from your OpenAI API credits.
+
 Official Codex history is never pulled in silently. After the first login and PIN setup, the app asks whether you want to copy it. You can say no and keep a completely clean slate, or import it later from the sidebar.
 
 ## Pick your installer
@@ -70,6 +72,10 @@ The UI keeps only lightweight rendered state. The Codex runtime lives in a separ
 
 Codex itself is the open-source [OpenAI Codex runtime](https://github.com/openai/codex). Codex Legion is an independent community client and is not an official OpenAI application.
 
+## Curiosity encouraged
+
+No mystery meat here. Every line of Codex Legion’s own code is in this repository, ready to be read, questioned, poked, or given a very suspicious eyebrow. Build it yourself, follow the network calls, and check how the keys are tucked away—the hood is open on purpose.
+
 ## Updates without surprises
 
 **Tools → Check for updates** reads the latest public GitHub release. If a newer version exists, Codex Legion downloads the small installer, verifies its SHA-256 digest, and asks before launching it.
@@ -96,4 +102,6 @@ The source intentionally stays simple: code-only WPF, the inbox .NET Framework c
 
 ## Still growing
 
-The core coding workflow is here, but rich Markdown, voice mode, full connector installation, and multi-window work are still future territory. If something feels rough, an issue with a screenshot and a short explanation is the most useful kind of report.
+Codex Legion is happily a work in progress: the core coding loop is real, while rich Markdown, full connector installation, and multi-window work are still wandering toward the party.
+
+Found a sharp corner, a sleepy button, or something that simply feels odd? Open an issue with a screenshot and a few words about what happened. Those reports are excellent fuel for the next build.

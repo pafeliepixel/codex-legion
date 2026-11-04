@@ -2,7 +2,7 @@
 param(
     [string]$RuntimeSource,
     [string]$GitHubRepository,
-    [string]$Version = '0.3.0',
+    [string]$Version = '0.4.0',
     [switch]$Zip,
     [switch]$SkipInstaller
 )
@@ -46,7 +46,13 @@ $runtimeFiles = @(
 foreach ($name in $runtimeFiles) {
     $source = Join-Path $RuntimeSource $name
     if (Test-Path -LiteralPath $source) {
-        Copy-Item -LiteralPath $source -Destination $runtimeTarget -Force
+        $destination = Join-Path $runtimeTarget $name
+        if (-not [String]::Equals(
+            [IO.Path]::GetFullPath($source),
+            [IO.Path]::GetFullPath($destination),
+            [StringComparison]::OrdinalIgnoreCase)) {
+            Copy-Item -LiteralPath $source -Destination $destination -Force
+        }
     } elseif ($name -eq 'codex.exe') {
         throw "Missing required runtime file: $source"
     }
