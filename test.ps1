@@ -1,0 +1,28 @@
+[CmdletBinding()]
+param()
+
+$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$frameworkRoot = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
+$compiler = Join-Path $frameworkRoot 'csc.exe'
+$outputDirectory = Join-Path $projectRoot 'build\Test'
+New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+
+& $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\ProfileSecuritySmoke.exe" `
+    "/reference:$frameworkRoot\System.dll" `
+    "/reference:$frameworkRoot\System.Security.dll" `
+    "/reference:$frameworkRoot\System.Web.Extensions.dll" `
+    (Join-Path $projectRoot 'ProfileSecurity.cs') `
+    (Join-Path $projectRoot 'tests\ProfileSecuritySmoke.cs')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& (Join-Path $outputDirectory 'ProfileSecuritySmoke.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\RuntimeSettingsSmoke.exe" `
+    "/reference:$frameworkRoot\System.dll" `
+    (Join-Path $projectRoot 'ProtocolModels.cs') `
+    (Join-Path $projectRoot 'tests\RuntimeSettingsSmoke.cs')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& (Join-Path $outputDirectory 'RuntimeSettingsSmoke.exe')
+exit $LASTEXITCODE

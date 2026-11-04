@@ -1,0 +1,9 @@
+Codex Legion ships its own copy of the OpenAI Codex command-line runtime.
+The runtime is launched as a private child process over stdio and uses the app's
+separate profile directory. It does not reuse the official Codex app's process,
+port, login cache, settings, or conversation store.
+
+OpenAI Codex source and license information:
+https://github.com/openai/codex
+
+The runtime files and their SHA-256 hashes are recorded in runtime\manifest.json.

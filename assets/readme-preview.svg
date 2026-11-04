@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Legion interface preview</title>
+  <desc id="desc">A native dark Windows workspace with a project sidebar, conversation area, and anchored model thinking slider.</desc>
+  <defs>
+    <linearGradient id="accent" x1="0" x2="1">
+      <stop offset="0" stop-color="#9d7bf2"/>
+      <stop offset="1" stop-color="#ff8a73"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#24202d"/>
+      <stop offset="1" stop-color="#17141e"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity=".48"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="680" rx="25" fill="#0c0a11"/>
+  <rect x="1" y="1" width="1198" height="678" rx="24" fill="none" stroke="#3e334d"/>
+  <rect width="1200" height="50" rx="25" fill="#15111d"/>
+  <rect y="25" width="1200" height="25" fill="#15111d"/>
+  <rect x="16" y="11" width="28" height="28" rx="9" fill="url(#accent)"/>
+  <text x="25" y="31" font-family="Consolas, monospace" font-size="16" font-weight="700" fill="#1a1320">//</text>
+  <text x="56" y="31" font-family="Segoe UI, sans-serif" font-size="15" font-weight="650" fill="#fbf8ff">Codex Legion</text>
+  <text x="600" y="30" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="10" letter-spacing="1.8" fill="#8d829a">SMALL APP / BIG IDEAS</text>
+  <g fill="#ad9fba">
+    <path d="M1080 25h13" stroke="#ad9fba"/>
+    <rect x="1124" y="19" width="12" height="12" rx="2" fill="none" stroke="#ad9fba"/>
+    <path d="M1170 19l12 12m0-12l-12 12" stroke="#ad9fba"/>
+  </g>
+  <rect x="0" y="50" width="266" height="630" fill="#13101a"/>
+  <path d="M266 50v630" stroke="#342b40"/>
+  <rect x="16" y="70" width="234" height="46" rx="12" fill="url(#accent)"/>
+  <text x="133" y="99" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="15" font-weight="650" fill="#17101d">＋ New thread</text>
+  <rect x="16" y="128" width="234" height="42" rx="11" fill="#1c1824" stroke="#383043"/>
+  <text x="133" y="154" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#f4effa">◇ Choose folder</text>
+  <text x="18" y="211" font-family="Segoe UI, sans-serif" font-size="10" font-weight="700" letter-spacing="1" fill="#a79ab8">PROJECT</text>
+  <rect x="16" y="224" width="234" height="58" rx="11" fill="#1a1621" stroke="#342b40"/>
+  <text x="29" y="249" font-family="Segoe UI, sans-serif" font-size="14" fill="#c4b8d0">No project yet</text>
+  <text x="29" y="269" font-family="Segoe UI, sans-serif" font-size="12" fill="#8f829d">Pick a folder to start</text>
+  <text x="18" y="328" font-family="Segoe UI, sans-serif" font-size="10" font-weight="700" letter-spacing="1" fill="#a79ab8">HISTORY</text>
+  <text x="233" y="328" text-anchor="end" font-family="Segoe UI, sans-serif" font-size="11" fill="#bc9cff">Import</text>
+  <text x="18" y="361" font-family="Segoe UI, sans-serif" font-size="13" fill="#8f829d">No chats yet</text>
+  <text x="18" y="620" font-family="Segoe UI, sans-serif" font-size="10" font-weight="700" letter-spacing="1" fill="#a79ab8">SESSION</text>
+  <text x="18" y="646" font-family="Segoe UI, sans-serif" font-size="12" fill="#9f92ad">Pick a folder</text>
+  <circle cx="292" cy="77" r="4" fill="#ff876f"/>
+  <text x="306" y="82" font-family="Segoe UI, sans-serif" font-size="17" font-weight="700" fill="#faf7ff">Workspace</text>
+  <text x="306" y="102" font-family="Segoe UI, sans-serif" font-size="12" fill="#9d90ac">Ready · private runtime</text>
+  <rect x="1072" y="66" width="101" height="38" rx="11" fill="#1c1824" stroke="#383043"/>
+  <text x="1122" y="90" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" fill="#f6f1fb">Account</text>
+  <path d="M266 123h934" stroke="#342b40"/>
+  <g transform="translate(510 190)">
+    <rect width="445" height="230" rx="22" fill="url(#card)" stroke="#4b3b5e"/>
+    <rect x="34" y="35" width="16" height="16" transform="rotate(45 42 43)" fill="none" stroke="#ff826d" stroke-width="2"/>
+    <text x="34" y="100" font-family="Segoe UI, sans-serif" font-size="34" font-weight="700" fill="#fffaff">Pick a folder.</text>
+    <text x="34" y="133" font-family="Segoe UI, sans-serif" font-size="16" fill="#aa9bb7">That’s where we’ll work.</text>
+    <rect x="34" y="162" width="210" height="46" rx="12" fill="url(#accent)"/>
+    <text x="139" y="191" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" font-weight="650" fill="#1b1320">Choose folder ↗</text>
+  </g>
+  <rect x="290" y="568" width="882" height="84" rx="25" fill="#191520" stroke="#40334e"/>
+  <circle cx="322" cy="625" r="18" fill="#211c29" stroke="#3b3146"/>
+  <text x="322" y="632" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="22" fill="#ddd3e6">＋</text>
+  <rect x="352" y="607" width="94" height="37" rx="11" fill="#211c29" stroke="#3b3146"/>
+  <text x="399" y="630" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" fill="#eee8f4">◉ Ask first</text>
+  <rect x="990" y="607" width="130" height="37" rx="11" fill="#211c29" stroke="#3b3146"/>
+  <text x="1055" y="630" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" fill="#eee8f4">GPT-6.1-Sol ⌄</text>
+  <circle cx="1145" cy="625" r="22" fill="url(#accent)"/>
+  <text x="1145" y="632" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="20" fill="#1b1320">↑</text>
+  <g transform="translate(780 385)" filter="url(#shadow)">
+    <rect width="340" height="166" rx="22" fill="#24202c" stroke="#50465b"/>
+    <text x="28" y="38" font-family="Segoe UI Symbol, sans-serif" font-size="19" fill="#bca4ff">ϟ</text>
+    <text x="170" y="39" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="18" font-weight="650" fill="#c6adff">High</text>
+    <text x="312" y="38" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="18" fill="#bca4ff">↻</text>
+    <rect x="18" y="55" width="304" height="38" rx="9" fill="#1b1722" stroke="#3a3046"/>
+    <text x="170" y="79" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" font-weight="600" fill="#f6f0fb">GPT-6.1-Sol ›</text>
+    <rect x="18" y="105" width="304" height="45" rx="23" fill="#2a2631" stroke="#4a4651"/>
+    <rect x="41" y="125" width="238" height="7" rx="4" fill="#4a4651"/>
+    <rect x="41" y="125" width="139" height="7" rx="4" fill="#9c83f7"/>
+    <g fill="#80788a">
+      <circle cx="41" cy="128.5" r="3"/><circle cx="89" cy="128.5" r="3"/><circle cx="137" cy="128.5" r="3"/><circle cx="184" cy="128.5" r="3"/><circle cx="232" cy="128.5" r="3"/><circle cx="279" cy="128.5" r="3"/>
+    </g>
+    <circle cx="184" cy="128.5" r="16" fill="#fffdfc"/>
+    <path d="M286 166l12 12 12-12" fill="#24202c" stroke="#50465b"/>
+  </g>
+</svg>

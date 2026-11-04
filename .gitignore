@@ -1,0 +1,10 @@
+/build/
+/dist/
+/obj/
+/runtime/
+/.protocol-schema/
+/.vs/
+*.user
+*.suo
+*.tmp
+*.log
