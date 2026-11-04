@@ -22,7 +22,6 @@ The result is a WPF client that feels at home on Windows and leaves the agent wo
 It is useful when you want:
 
 - a lighter Codex window beside an editor or game engine;
-- a clean project-first workspace without an automatically selected folder;
 - a separate login and chat history from the official app;
 - clear control over model, thinking effort, approvals, and file access;
 - an install that works even when the official Codex app is not present.
