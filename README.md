@@ -36,7 +36,7 @@ When a task needs a real webpage, Legion can launch a visible managed Edge or Ch
 
 Prefer to keep the model close too? Open **Local models** and Legion checks the PC's RAM, GPU, VRAM, and free space, then ranks a set of downloadable models. Pick one and Legion brings in a pinned Strata control bundle, the matching hardware engine, and the model itself. Strata never needs to be installed: there is no extra app, service, Start menu entry, or PATH change. The engine runs as Legion's child on loopback port `18347` and stops with the app.
 
-The regular installers stay small because local AI is entirely optional. The 73 MB control bundle, hardware engine, and model files are downloaded only after a clear size-and-license prompt, verified by the embedded engine, and kept in Legion's private data plus the model folder you choose. Model downloads are large—roughly 24 GB to well over 250 GB—so the recommendation screen is intentionally honest about the commitment.
+The regular installers stay small because local AI is entirely optional. The 73 MB control bundle, hardware engine, and model files are downloaded only after a size-and-license prompt, verified by the embedded engine, and kept in Legion's private data plus the model folder you choose. Model downloads range from roughly 24 GB to well over 250 GB.
 
 Tap the microphone for a proper hands-free conversation—not push-to-talk. Legion listens for natural turns, speaks back, and lets you interrupt. The first tap opens a themed setup with a direct link to create an OpenAI API key. Once it connects, that key is protected for the current Windows user with DPAPI, so the next conversation is one click away. Voice usage comes from your OpenAI API credits.
 
@@ -46,12 +46,10 @@ Official Codex history is never pulled in silently. After the first login and PI
 
 | Download | Best for | Size |
 | --- | --- | ---: |
-| **CodexLegionSetup.exe** | Normal installation. Downloads the verified private runtime when needed. | ~0.6 MB |
+| **CodexLegionSetup.exe** | Normal installation. Downloads the verified private runtime when needed. | ~0.5 MB |
 | **CodexLegionSetup-offline.exe** | A complete install for offline or repeat setups. | ~164 MB |
 
 Both are per-user installers and do not need administrator access. Codex Legion installs under `%LOCALAPPDATA%\Programs\Codex Legion`, can add Start menu or desktop shortcuts, and includes an uninstaller.
-
-The raw application EXE is intentionally not published as a release download. Pick one of the two installers from the [latest release](../../releases/latest).
 
 ## Your account stays separate
 
@@ -105,7 +103,7 @@ To create the installers, point the packager at a Codex Windows runtime director
 ./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.6.0 -Zip
 ```
 
-The source intentionally stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.
+The source stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.
 
 ## Still growing
 
