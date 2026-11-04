@@ -52,8 +52,6 @@ Codex Legion does not borrow the official app's saved credentials. It gives its 
 
 After signing in once, you set a 4–12 digit PIN. The login is remembered, while the PIN is requested again every seven days—useful on a computer that other people may occasionally touch without making you sign in every launch.
 
-The PIN is a friendly local gate, not a replacement for a separate Windows account. Someone with full access to your Windows profile can also modify local applications.
-
 ## What it is built on
 
 ```text
