@@ -29,11 +29,19 @@ namespace CodexNativeLite
         public string Model { get; set; }
         public string ReasoningEffort { get; set; }
         public string PermissionMode { get; set; }
+        public string ModelProvider { get; set; }
+        public string LocalModelId { get; set; }
+        public string LocalModelDirectory { get; set; }
+        public string LocalBaseUrl { get; set; }
 
         public RuntimeSettings()
         {
             PermissionMode = "ask";
+            ModelProvider = "openai";
         }
+
+        public bool UsesLocalModel { get { return String.Equals(ModelProvider, "strata", StringComparison.OrdinalIgnoreCase); } }
+        public string EffectiveModel { get { return UsesLocalModel ? "strata" : Model; } }
 
         public string PermissionLabel
         {

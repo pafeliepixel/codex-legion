@@ -7,3 +7,12 @@ OpenAI Codex source and license information:
 https://github.com/openai/codex
 
 The runtime files and their SHA-256 hashes are recorded in runtime\manifest.json.
+
+Local models are optional. When a user chooses one, Codex Legion downloads a
+pinned, SHA-256-verified Strata control bundle into Legion's own LocalAppData
+directory. It is not installed system-wide and is removed from memory when
+Legion closes. Engine and model downloads are handled by that embedded control
+bundle and remain subject to their own upstream licenses.
+
+Strata source and MIT license information:
+https://github.com/Niko1221/Strata

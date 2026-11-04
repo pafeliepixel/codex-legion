@@ -30,6 +30,9 @@ $compilerArguments = @(
     "/reference:$frameworkRoot\System.dll"
     "/reference:$frameworkRoot\System.Core.dll"
     "/reference:$frameworkRoot\System.Drawing.dll"
+    "/reference:$frameworkRoot\System.Management.dll"
+    "/reference:$frameworkRoot\System.IO.Compression.dll"
+    "/reference:$frameworkRoot\System.IO.Compression.FileSystem.dll"
     "/reference:$frameworkRoot\System.Security.dll"
     "/reference:$frameworkRoot\System.Web.Extensions.dll"
     "/reference:$frameworkRoot\System.Net.WebSockets.dll"
@@ -66,6 +69,9 @@ $compilerArguments += @(
     (Join-Path $projectRoot 'BrowserToolContract.cs')
     (Join-Path $projectRoot 'ManagedBrowser.cs')
     (Join-Path $projectRoot 'MainWindowBrowser.cs')
+    (Join-Path $projectRoot 'LocalModelCatalog.cs')
+    (Join-Path $projectRoot 'EmbeddedStrataManager.cs')
+    (Join-Path $projectRoot 'MainWindowLocalAi.cs')
     (Join-Path $projectRoot 'Properties\AssemblyInfo.cs')
 )
 

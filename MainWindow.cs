@@ -62,6 +62,9 @@ namespace CodexNativeLite
         {
             _profileSecurity = new ProfileSecurity();
             _settingsStore.Load(_runtimeSettings);
+            if (!String.IsNullOrWhiteSpace(_runtimeSettings.LocalModelDirectory))
+                _localAi.ModelDirectory = _runtimeSettings.LocalModelDirectory;
+            _runtimeSettings.LocalBaseUrl = null;
             Title = "Codex Legion";
             Width = 1120;
             Height = 760;
@@ -635,6 +638,13 @@ namespace CodexNativeLite
         {
             string text = _composer.Text.Trim();
             if (!_authenticated || String.IsNullOrWhiteSpace(text) || _client == null || !_client.IsRunning) return;
+            if (_runtimeSettings.UsesLocalModel && !_localAi.IsReady)
+            {
+                AddSystemCard("Local model is sleeping", "Open Local models from the model picker or Chat tools, then start "
+                    + ((LocalModelCatalog.Find(_runtimeSettings.LocalModelId) ?? new LocalModelChoice { Name = "your local model" }).Name) + ". Your draft is still here.");
+                SetStatus("Start the local model first", false);
+                return;
+            }
             if (_busy && !String.IsNullOrWhiteSpace(_client.ActiveTurnId))
             {
                 try
@@ -1621,6 +1631,8 @@ namespace CodexNativeLite
             _metricsTimer.Stop();
             if (_voiceSession != null) _voiceSession.Dispose();
             _managedBrowser.Dispose();
+            if (_localAiStartStop != null) _localAiStartStop.Cancel();
+            _localAi.Dispose();
             try { _settingsStore.Save(_runtimeSettings); } catch { }
             if (_client != null) _client.Dispose();
             try

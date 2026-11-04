@@ -205,7 +205,29 @@ namespace CodexNativeLite
             parameters["dynamicTools"] = BrowserToolContract.CreateSpecs();
             if (settings != null)
             {
-                if (!String.IsNullOrWhiteSpace(settings.Model)) parameters["model"] = settings.Model;
+                if (!String.IsNullOrWhiteSpace(settings.EffectiveModel)) parameters["model"] = settings.EffectiveModel;
+                if (settings.UsesLocalModel)
+                {
+                    if (String.IsNullOrWhiteSpace(settings.LocalBaseUrl))
+                        throw new InvalidOperationException("Start the selected local model before creating a local chat.");
+                    parameters["modelProvider"] = "strata";
+                    parameters["allowProviderModelFallback"] = false;
+                    parameters["config"] = new Dictionary<string, object>
+                    {
+                        { "model_providers", new Dictionary<string, object>
+                            {
+                                { "strata", new Dictionary<string, object>
+                                    {
+                                        { "name", "Legion Local · Strata engine" },
+                                        { "base_url", settings.LocalBaseUrl.TrimEnd('/') },
+                                        { "wire_api", "responses" },
+                                        { "stream_idle_timeout_ms", 600000 }
+                                    }
+                                }
+                            }
+                        }
+                    };
+                }
                 parameters["approvalPolicy"] = settings.ApprovalPolicy;
                 parameters["approvalsReviewer"] = settings.ApprovalsReviewer;
                 parameters["sandbox"] = settings.SandboxMode;
@@ -353,7 +375,7 @@ namespace CodexNativeLite
             if (!String.IsNullOrWhiteSpace(workingDirectory)) parameters["cwd"] = workingDirectory;
             if (settings != null)
             {
-                if (!String.IsNullOrWhiteSpace(settings.Model)) parameters["model"] = settings.Model;
+                if (!String.IsNullOrWhiteSpace(settings.EffectiveModel)) parameters["model"] = settings.EffectiveModel;
                 if (!String.IsNullOrWhiteSpace(settings.ReasoningEffort)) parameters["effort"] = settings.ReasoningEffort;
                 parameters["approvalPolicy"] = settings.ApprovalPolicy;
                 parameters["approvalsReviewer"] = settings.ApprovalsReviewer;

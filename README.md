@@ -34,6 +34,10 @@ You can stop or steer an active turn, attach images, use local skills, inspect G
 
 When a task needs a real webpage, Legion can launch a visible managed Edge or Chrome window. It uses a separate browser profile, starts only on demand, and disappears when you close it or exit Legion. Reading and scrolling stay quiet; clicking and typing follow your approval mode. Your everyday browser tabs, cookies, and extensions are left alone.
 
+Prefer to keep the model close too? Open **Local models** and Legion checks the PC's RAM, GPU, VRAM, and free space, then ranks a set of downloadable models. Pick one and Legion brings in a pinned Strata control bundle, the matching hardware engine, and the model itself. Strata never needs to be installed: there is no extra app, service, Start menu entry, or PATH change. The engine runs as Legion's child on loopback port `18347` and stops with the app.
+
+The regular installers stay small because local AI is entirely optional. The 73 MB control bundle, hardware engine, and model files are downloaded only after a clear size-and-license prompt, verified by the embedded engine, and kept in Legion's private data plus the model folder you choose. Model downloads are large—roughly 24 GB to well over 250 GB—so the recommendation screen is intentionally honest about the commitment.
+
 Tap the microphone for a proper hands-free conversation—not push-to-talk. Legion listens for natural turns, speaks back, and lets you interrupt. The first tap opens a themed setup with a direct link to create an OpenAI API key. Once it connects, that key is protected for the current Windows user with DPAPI, so the next conversation is one click away. Voice usage comes from your OpenAI API credits.
 
 Official Codex history is never pulled in silently. After the first login and PIN setup, the app asks whether you want to copy it. You can say no and keep a completely clean slate, or import it later from the sidebar.
@@ -69,9 +73,11 @@ Codex Legion — native WPF / .NET Framework UI
                 └── sandboxed local tools
 ```
 
-The UI keeps only lightweight rendered state. The Codex runtime lives in a separate child process, so its memory is visible independently and is released when the app closes. No permanent server port is opened; managed browsing uses a random loopback debugging port only while its isolated browser is running.
+The UI keeps only lightweight rendered state. The Codex runtime lives in a separate child process, so its memory is visible independently and is released when the app closes. Cloud use opens no permanent server port; managed browsing uses a random loopback debugging port only while its isolated browser is running. If you start a local model, its private API uses Legion's dedicated loopback port `18347` for that session.
 
 Codex itself is the open-source [OpenAI Codex runtime](https://github.com/openai/codex). Codex Legion is an independent community client and is not an official OpenAI application.
+
+Optional local inference is powered by the open-source [Strata engine](https://github.com/Niko1221/Strata), downloaded into Legion on demand under Strata's MIT license. Model weights and hardware components keep their own upstream license terms, which Legion shows before downloading them.
 
 ## Curiosity encouraged
 
@@ -96,7 +102,7 @@ Windows already includes most of what the project needs:
 To create the installers, point the packager at a Codex Windows runtime directory:
 
 ```powershell
-./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.5.0 -Zip
+./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.6.0 -Zip
 ```
 
 The source intentionally stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.

@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[^/]+/[^/]+$')]
     [string]$Repository,
-    [string]$Version = '0.5.0',
+    [string]$Version = '0.6.0',
     [string]$RuntimeSource,
     [ValidateSet('public', 'private')]
     [string]$Visibility = 'public'
@@ -57,20 +57,23 @@ try {
     $tag = 'v' + $Version.TrimStart('v')
     $channel = Get-Content -LiteralPath 'dist\CodexLegion\update-channel.json' -Raw | ConvertFrom-Json
     $runtimeTag = [string]$channel.runtimeReleaseTag
-    & $ghPath release create $runtimeTag `
-        'dist\CodexLegionRuntime-win-x64.zip' `
-        'dist\CodexLegionRuntime-win-x64.zip.sha256' `
-        '--prerelease' `
-        '--title' 'Codex Legion runtime support' `
-        '--notes' 'Support package used automatically by the Codex Legion web installer.'
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & $ghPath release view $runtimeTag '--json' tagName 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        & $ghPath release create $runtimeTag `
+            'dist\CodexLegionRuntime-win-x64.zip' `
+            'dist\CodexLegionRuntime-win-x64.zip.sha256' `
+            '--prerelease' `
+            '--title' 'Codex Legion runtime support' `
+            '--notes' 'Support package used automatically by the Codex Legion web installer.'
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    }
 
     $assets = @(
         'dist\CodexLegionSetup.exe',
         'dist\CodexLegionSetup-offline.exe',
         'README.md'
     )
-    & $ghPath release create $tag @assets '--title' "Codex Legion $tag" '--notes' "Legion learned to browse. It now opens a visible, isolated Edge or Chrome session only when a task needs one, keeps it separate from your personal browser, and asks before clicking or typing."
+    & $ghPath release create $tag @assets '--title' "Codex Legion $tag" '--notes' "Legion can now bring local models home. Pick one from a hardware-aware list and it downloads a pinned embedded Strata control bundle plus the right engine for this PC—no separate Strata installation, service, or PATH changes. Model files stay optional and live wherever you choose."
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Host "Published https://github.com/$Repository/releases/tag/$tag"
 } finally {

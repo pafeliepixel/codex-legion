@@ -51,6 +51,20 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & (Join-Path $outputDirectory 'BrowserToolSmoke.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+& $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\LocalModelSmoke.exe" `
+    "/reference:$frameworkRoot\System.dll" `
+    "/reference:$frameworkRoot\System.Core.dll" `
+    "/reference:$frameworkRoot\System.Management.dll" `
+    "/reference:$frameworkRoot\System.IO.Compression.dll" `
+    "/reference:$frameworkRoot\System.IO.Compression.FileSystem.dll" `
+    (Join-Path $projectRoot 'LocalModelCatalog.cs') `
+    (Join-Path $projectRoot 'EmbeddedStrataManager.cs') `
+    (Join-Path $projectRoot 'tests\LocalModelSmoke.cs')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& (Join-Path $outputDirectory 'LocalModelSmoke.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 & $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\RuntimeSettingsSmoke.exe" `
     "/reference:$frameworkRoot\System.dll" `
     (Join-Path $projectRoot 'ProtocolModels.cs') `

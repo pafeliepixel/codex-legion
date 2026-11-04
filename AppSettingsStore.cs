@@ -27,6 +27,10 @@ namespace CodexNativeLite
                 var values = _json.Deserialize<Dictionary<string, object>>(File.ReadAllText(_path));
                 target.Model = Read(values, "model");
                 target.ReasoningEffort = Read(values, "reasoningEffort");
+                string provider = Read(values, "modelProvider");
+                target.ModelProvider = provider == "strata" ? "strata" : "openai";
+                target.LocalModelId = Read(values, "localModelId");
+                target.LocalModelDirectory = Read(values, "localModelDirectory");
                 string permission = Read(values, "permissionMode");
                 if (permission == "read-only" || permission == "ask" || permission == "auto-review" || permission == "full")
                     target.PermissionMode = permission;
@@ -44,7 +48,10 @@ namespace CodexNativeLite
             {
                 { "model", settings.Model },
                 { "reasoningEffort", settings.ReasoningEffort },
-                { "permissionMode", settings.PermissionMode }
+                { "permissionMode", settings.PermissionMode },
+                { "modelProvider", settings.ModelProvider },
+                { "localModelId", settings.LocalModelId },
+                { "localModelDirectory", settings.LocalModelDirectory }
             };
             string temporary = _path + ".tmp";
             File.WriteAllText(temporary, _json.Serialize(values));

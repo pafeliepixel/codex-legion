@@ -32,6 +32,9 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Security" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Net.WebSockets" />
@@ -61,6 +64,9 @@
     <Compile Include="BrowserToolContract.cs" />
     <Compile Include="ManagedBrowser.cs" />
     <Compile Include="MainWindowBrowser.cs" />
+    <Compile Include="LocalModelCatalog.cs" />
+    <Compile Include="EmbeddedStrataManager.cs" />
+    <Compile Include="MainWindowLocalAi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

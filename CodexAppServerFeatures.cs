@@ -154,7 +154,7 @@ namespace CodexNativeLite
             if (!String.IsNullOrWhiteSpace(workingDirectory)) parameters["cwd"] = workingDirectory;
             if (settings != null)
             {
-                parameters["model"] = settings.Model;
+                parameters["model"] = settings.EffectiveModel;
                 parameters["approvalPolicy"] = settings.ApprovalPolicy;
                 parameters["approvalsReviewer"] = settings.ApprovalsReviewer;
                 parameters["sandbox"] = settings.SandboxMode;

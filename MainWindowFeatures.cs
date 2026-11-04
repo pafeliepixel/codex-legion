@@ -364,10 +364,11 @@ namespace CodexNativeLite
             ModelOption model = SelectedModel();
             if (_modelButton != null)
             {
-                string modelName = model == null ? "Server default" : model.ToString();
+                LocalModelChoice local = _runtimeSettings.UsesLocalModel ? LocalModelCatalog.Find(_runtimeSettings.LocalModelId) : null;
+                string modelName = local != null ? "Local · " + local.Name : (model == null ? "Server default" : model.ToString());
                 string effortName = String.IsNullOrWhiteSpace(_runtimeSettings.ReasoningEffort) ? "Default" : Friendly(_runtimeSettings.ReasoningEffort);
                 _modelButton.Content = modelName + "  " + effortName + " ⌄";
-                _modelButton.IsEnabled = _authenticated && _capabilities.Models.Count > 0;
+                _modelButton.IsEnabled = _authenticated;
             }
             if (_permissionButton != null)
             {
@@ -397,6 +398,15 @@ namespace CodexNativeLite
         private void ShowModelSettings(Popup popup)
         {
             ModelOption model = SelectedModel();
+            LocalModelChoice local = _runtimeSettings.UsesLocalModel ? LocalModelCatalog.Find(_runtimeSettings.LocalModelId) : null;
+            if (local != null)
+            {
+                model = new ModelOption { Id = "strata", DisplayName = "Local · " + local.Name, DefaultReasoningEffort = "medium" };
+                model.ReasoningEfforts.Add(new ReasoningOption { Id = "none", Description = "Fastest answers with no extra reasoning budget." });
+                model.ReasoningEfforts.Add(new ReasoningOption { Id = "low", Description = "A little more time for straightforward work." });
+                model.ReasoningEfforts.Add(new ReasoningOption { Id = "medium", Description = "A balanced local default." });
+                model.ReasoningEfforts.Add(new ReasoningOption { Id = "high", Description = "More local reasoning for difficult work." });
+            }
             var panel = new StackPanel();
             Slider effortSlider = null;
             bool updatingEffort = false;
@@ -529,6 +539,16 @@ namespace CodexNativeLite
             back.Click += delegate { ShowModelSettings(popup); };
             panel.Children.Add(back);
             var list = new StackPanel();
+            var localButton = MakeButton("◆  Local models on this PC", false);
+            localButton.HorizontalContentAlignment = HorizontalAlignment.Left;
+            localButton.Margin = new Thickness(0, 0, 0, 9);
+            localButton.Click += async delegate
+            {
+                popup.IsOpen = false;
+                try { await ShowLocalModelsAsync(); }
+                catch (Exception ex) { AddSystemCard("Local AI hiccup", ex.Message); SetStatus("Local AI unavailable", true); }
+            };
+            list.Children.Add(localButton);
             foreach (ModelOption model in _capabilities.Models)
             {
                 var content = new Grid();
@@ -552,11 +572,16 @@ namespace CodexNativeLite
                 button.Margin = new Thickness(0, 0, 0, 6);
                 button.Click += delegate(object source, RoutedEventArgs args)
                 {
+                    bool leavingLocal = _runtimeSettings.UsesLocalModel;
+                    if (leavingLocal) _localAi.Stop();
+                    _runtimeSettings.ModelProvider = "openai";
+                    _runtimeSettings.LocalBaseUrl = null;
                     _runtimeSettings.Model = Convert.ToString(((Button)source).Tag);
                     ModelOption selected = SelectedModel();
                     _runtimeSettings.ReasoningEffort = selected == null ? null : selected.DefaultReasoningEffort;
                     _settingsStore.Save(_runtimeSettings);
                     UpdateRuntimeButtons();
+                    if (leavingLocal) PrepareNewThread();
                     ShowModelSettings(popup);
                 };
                 list.Children.Add(button);
@@ -684,11 +709,16 @@ namespace CodexNativeLite
                 choices.Add(new ChoiceItem(model.Id, model.ToString(), model.Description));
             string result = await ShowChoiceAsync("Pick a model", "Only models available to this account are shown.", choices);
             if (String.IsNullOrWhiteSpace(result)) return;
+            bool leavingLocal = _runtimeSettings.UsesLocalModel;
+            if (leavingLocal) _localAi.Stop();
+            _runtimeSettings.ModelProvider = "openai";
+            _runtimeSettings.LocalBaseUrl = null;
             _runtimeSettings.Model = result;
             ModelOption selected = SelectedModel();
             _runtimeSettings.ReasoningEffort = selected == null ? null : selected.DefaultReasoningEffort;
             UpdateRuntimeButtons();
             _settingsStore.Save(_runtimeSettings);
+            if (leavingLocal) PrepareNewThread();
         }
 
         private async void ChooseEffortClick(object sender, RoutedEventArgs e)
@@ -800,8 +830,11 @@ namespace CodexNativeLite
             {
                 new ChoiceItem("git", "Git snapshot", "Branch and changed files."),
                 new ChoiceItem("worktree", "New worktree", "Create an isolated Git worktree."),
-                new ChoiceItem("skills", "Skills", "Browse local skills.")
+                new ChoiceItem("skills", "Skills", "Browse local skills."),
+                new ChoiceItem("local-models", "Local models", "Match this PC with downloadable models and run one inside Legion.", null, "◆")
             };
+            if (_localAi.IsRunning)
+                choices.Add(new ChoiceItem("local-stop", "Stop local model", "Release its RAM and VRAM.", null, "■"));
             if (_updates.HasReleaseChannel)
                 choices.Add(new ChoiceItem("updates", "Check for updates", "Install the newest GitHub release."));
             if (_managedBrowser.IsRunning)
@@ -883,6 +916,15 @@ namespace CodexNativeLite
                 else if (action == "git") await ShowGitSnapshotAsync();
                 else if (action == "worktree") await CreateWorktreeAsync();
                 else if (action == "skills") await BrowseSkillsAsync();
+                else if (action == "local-models") await ShowLocalModelsAsync();
+                else if (action == "local-stop")
+                {
+                    if (_localAiStartStop != null) _localAiStartStop.Cancel();
+                    _localAi.Stop();
+                    _runtimeSettings.LocalBaseUrl = null;
+                    SetStatus("Local model stopped", false);
+                    UpdateRuntimeButtons();
+                }
                 else if (action == "browser-close")
                 {
                     await _managedBrowser.ExecuteAsync("close", new Dictionary<string, object>());

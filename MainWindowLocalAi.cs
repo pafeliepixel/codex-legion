@@ -1,0 +1,180 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+
+namespace CodexNativeLite
+{
+    public sealed partial class MainWindow
+    {
+        private readonly EmbeddedStrataManager _localAi = new EmbeddedStrataManager();
+        private CancellationTokenSource _localAiStartStop;
+
+        private async Task ShowLocalModelsAsync()
+        {
+            string savedDirectory = _runtimeSettings.LocalModelDirectory;
+            if (!String.IsNullOrWhiteSpace(savedDirectory)) _localAi.ModelDirectory = savedDirectory;
+            LocalHardwareProfile hardware = LocalHardwareDetector.Detect(_localAi.ModelDirectory);
+            var choices = new List<ChoiceItem>
+            {
+                new ChoiceItem("folder", "Model folder", CompactPath(_localAi.ModelDirectory), null, "▤")
+            };
+            if (_runtimeSettings.UsesLocalModel)
+                choices.Add(new ChoiceItem("cloud", "Back to OpenAI models", "Stop the local engine and begin a new cloud chat.", null, "☁"));
+            foreach (LocalModelChoice model in LocalModelCatalog.Create())
+            {
+                string rating = model.Rating(hardware);
+                string icon = rating == "Comfortable" ? "✓" : (rating == "Tight fit" ? "~" : (rating == "Not supported" ? "×" : "!"));
+                choices.Add(new ChoiceItem(model.Id, model.Name, model.Recommendation(hardware), null, icon));
+            }
+
+            string selected = await ShowChoiceAsync("Local models", HardwareSummary(hardware), choices);
+            if (selected == "folder")
+            {
+                ChooseLocalModelFolder();
+                await ShowLocalModelsAsync();
+                return;
+            }
+            if (selected == "cloud")
+            {
+                _localAi.Stop();
+                _runtimeSettings.ModelProvider = "openai";
+                _runtimeSettings.LocalBaseUrl = null;
+                _settingsStore.Save(_runtimeSettings);
+                PrepareNewThread();
+                UpdateRuntimeButtons();
+                SetStatus("Cloud models ready", false);
+                return;
+            }
+            LocalModelChoice modelChoice = LocalModelCatalog.Find(selected);
+            if (modelChoice == null) return;
+
+            string ratingText = modelChoice.Rating(hardware);
+            if (ratingText == "Not supported" || ratingText == "Not recommended" || ratingText == "Needs more disk")
+            {
+                bool continueAnyway = await ShowPromptAsync(
+                    ratingText,
+                    modelChoice.Recommendation(hardware) + "\n\nLegion can still ask the embedded engine for its exact plan, but it may refuse this hardware.",
+                    "Check anyway",
+                    "Pick another",
+                    false);
+                if (!continueAnyway) { await ShowLocalModelsAsync(); return; }
+            }
+
+            if (!_localAi.IsControlReady)
+            {
+                bool bootstrap = await ShowPromptAsync(
+                    "Add Legion’s local engine?",
+                    "Legion will download a 73 MB pinned Strata control bundle with its private Python runtime. It stays inside Legion and its SHA-256 is checked before anything runs.",
+                    "Add local engine",
+                    "Not now",
+                    false);
+                if (!bootstrap) return;
+                SetStatus("Adding local AI…", false);
+                await _localAi.EnsureControlAsync(delegate(int percent, string text)
+                {
+                    if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) return;
+                    try { Dispatcher.BeginInvoke((Action)(() => SetStatus(text + " · " + percent + "%", false))); }
+                    catch (InvalidOperationException) { }
+                });
+            }
+
+            SetStatus("Checking " + modelChoice.Name + "…", false);
+            await _localAi.PlanAsync(modelChoice, LocalAiActivity);
+            AddActivity("Local plan", "The embedded engine built a machine-specific plan. It will verify the engine package and model files again while downloading.");
+
+            bool download = await ShowPromptAsync(
+                "Bring " + modelChoice.Name + " home?",
+                "About " + modelChoice.DownloadGb.ToString("0.#") + " GB of model files, plus the hardware engine, will be downloaded to:\n" + _localAi.ModelDirectory
+                    + "\n\n" + modelChoice.LicenseName + " apply to the model files. Downloads resume if Legion closes.",
+                "Download & start",
+                "Not now",
+                false);
+            if (!download) { SetStatus("Ready ✦", false); return; }
+
+            if (_localAiStartStop != null) _localAiStartStop.Cancel();
+            _localAiStartStop = new CancellationTokenSource();
+            SetStatus("Preparing local model…", false);
+            try
+            {
+                await _localAi.StartAsync(modelChoice, LocalAiActivity, _localAiStartStop.Token);
+                _runtimeSettings.ModelProvider = "strata";
+                _runtimeSettings.LocalModelId = modelChoice.Id;
+                _runtimeSettings.LocalModelDirectory = _localAi.ModelDirectory;
+                _runtimeSettings.LocalBaseUrl = _localAi.BaseUrl;
+                if (_runtimeSettings.ReasoningEffort != "none" && _runtimeSettings.ReasoningEffort != "low"
+                    && _runtimeSettings.ReasoningEffort != "medium" && _runtimeSettings.ReasoningEffort != "high")
+                    _runtimeSettings.ReasoningEffort = "medium";
+                _settingsStore.Save(_runtimeSettings);
+                PrepareNewThread();
+                UpdateRuntimeButtons();
+                SetStatus("Local · " + modelChoice.Name, false);
+                AddSystemCard("Local model ready", modelChoice.Name + " is running inside Legion on " + _localAi.BaseUrl + ". Start a new chat whenever you’re ready.");
+            }
+            catch (OperationCanceledException)
+            {
+                _localAi.Stop();
+                SetStatus("Local model stopped", false);
+            }
+        }
+
+        private void ChooseLocalModelFolder()
+        {
+            using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
+            {
+                dialog.Description = "Choose where Legion keeps local models";
+                dialog.ShowNewFolderButton = true;
+                dialog.SelectedPath = Directory.Exists(_localAi.ModelDirectory) ? _localAi.ModelDirectory : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                _localAi.ModelDirectory = dialog.SelectedPath;
+                _runtimeSettings.LocalModelDirectory = dialog.SelectedPath;
+                _settingsStore.Save(_runtimeSettings);
+            }
+        }
+
+        private void LocalAiActivity(string line)
+        {
+            if (String.IsNullOrWhiteSpace(line)) return;
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) return;
+            try { Dispatcher.BeginInvoke((Action)(() =>
+            {
+                string clean = line.Trim();
+                if (clean.StartsWith("{") && clean.Length > 180) clean = "Working through the verified model plan…";
+                if (clean.Length > 240) clean = clean.Substring(0, 240) + "…";
+                SetStatus("Local AI · " + clean, false);
+                AppendActivity("Local AI", clean + "\n");
+            })); }
+            catch (InvalidOperationException) { }
+        }
+
+        private static string HardwareSummary(LocalHardwareProfile hardware)
+        {
+            var builder = new StringBuilder();
+            builder.Append(Math.Round(hardware.TotalMemoryGb)).Append(" GB RAM");
+            if (hardware.Gpus.Count > 0)
+            {
+                builder.Append(" · ");
+                for (int index = 0; index < hardware.Gpus.Count; index++)
+                {
+                    if (index > 0) builder.Append(", ");
+                    LocalGpuInfo gpu = hardware.Gpus[index];
+                    builder.Append(gpu.Name);
+                    if (gpu.MemoryBytes > 0) builder.Append(" ").Append(Math.Round(gpu.MemoryBytes / 1073741824d)).Append(" GB");
+                }
+            }
+            else builder.Append(" · no supported GPU found");
+            if (hardware.FreeDiskGb > 0) builder.Append(" · ").Append(Math.Round(hardware.FreeDiskGb)).Append(" GB free");
+            builder.Append("\nLegion ranks the easy fits first; the embedded engine performs the final check before downloading.");
+            return builder.ToString();
+        }
+
+        private static string CompactPath(string path)
+        {
+            if (String.IsNullOrWhiteSpace(path)) return "Choose where the big files live.";
+            return path.Length <= 70 ? path : "…" + path.Substring(path.Length - 69);
+        }
+    }
+}
