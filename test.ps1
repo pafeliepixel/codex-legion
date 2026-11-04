@@ -37,6 +37,20 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & (Join-Path $outputDirectory 'StarterWorkspaceSmoke.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+& $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\BrowserToolSmoke.exe" `
+    "/reference:$frameworkRoot\System.dll" `
+    "/reference:$frameworkRoot\System.Core.dll" `
+    "/reference:$frameworkRoot\System.Web.Extensions.dll" `
+    "/reference:$frameworkRoot\System.Net.WebSockets.dll" `
+    "/reference:$frameworkRoot\System.Net.WebSockets.Client.dll" `
+    (Join-Path $projectRoot 'BrowserToolContract.cs') `
+    (Join-Path $projectRoot 'ManagedBrowser.cs') `
+    (Join-Path $projectRoot 'tests\BrowserToolSmoke.cs')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& (Join-Path $outputDirectory 'BrowserToolSmoke.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 & $compiler /nologo /target:exe /platform:x64 "/out:$outputDirectory\RuntimeSettingsSmoke.exe" `
     "/reference:$frameworkRoot\System.dll" `
     (Join-Path $projectRoot 'ProtocolModels.cs') `

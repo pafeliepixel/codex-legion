@@ -63,6 +63,9 @@ $compilerArguments += @(
     (Join-Path $projectRoot 'RealtimeVoiceSession.cs')
     (Join-Path $projectRoot 'MainWindowVoice.cs')
     (Join-Path $projectRoot 'StarterWorkspace.cs')
+    (Join-Path $projectRoot 'BrowserToolContract.cs')
+    (Join-Path $projectRoot 'ManagedBrowser.cs')
+    (Join-Path $projectRoot 'MainWindowBrowser.cs')
     (Join-Path $projectRoot 'Properties\AssemblyInfo.cs')
 )
 

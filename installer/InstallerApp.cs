@@ -352,7 +352,7 @@ namespace CodexLegionInstaller
             using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexLegion"))
             {
                 key.SetValue("DisplayName", "Codex Legion");
-                key.SetValue("DisplayVersion", "0.4.1");
+                key.SetValue("DisplayVersion", "0.5.0");
                 key.SetValue("Publisher", "Codex Legion community project");
                 key.SetValue("InstallLocation", target);
                 key.SetValue("DisplayIcon", executable);

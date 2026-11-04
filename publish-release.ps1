@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[^/]+/[^/]+$')]
     [string]$Repository,
-    [string]$Version = '0.4.1',
+    [string]$Version = '0.5.0',
     [string]$RuntimeSource,
     [ValidateSet('public', 'private')]
     [string]$Visibility = 'public'
@@ -70,7 +70,7 @@ try {
         'dist\CodexLegionSetup-offline.exe',
         'README.md'
     )
-    & $ghPath release create $tag @assets '--title' "Codex Legion $tag" '--notes' "A small correctness update for the native client."
+    & $ghPath release create $tag @assets '--title' "Codex Legion $tag" '--notes' "Legion learned to browse. It now opens a visible, isolated Edge or Chrome session only when a task needs one, keeps it separate from your personal browser, and asks before clicking or typing."
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Host "Published https://github.com/$Repository/releases/tag/$tag"
 } finally {

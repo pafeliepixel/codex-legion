@@ -3,6 +3,7 @@
 /obj/
 /runtime/
 /.protocol-schema/
+/.protocol-ts/
 /.vs/
 *.user
 *.suo

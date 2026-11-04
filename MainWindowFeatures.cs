@@ -178,7 +178,11 @@ namespace CodexNativeLite
                 string method = CodexAppServerClient.GetString(message, "method");
                 var parameters = CodexAppServerClient.GetDictionary(message, "params");
 
-                if (method == "item/commandExecution/requestApproval" || method == "item/fileChange/requestApproval")
+                if (method == "item/tool/call")
+                {
+                    await HandleBrowserToolRequestAsync(id, parameters);
+                }
+                else if (method == "item/commandExecution/requestApproval" || method == "item/fileChange/requestApproval")
                 {
                     string reason = CodexAppServerClient.GetString(parameters, "reason");
                     string command = CodexAppServerClient.GetString(parameters, "command");
@@ -800,6 +804,10 @@ namespace CodexNativeLite
             };
             if (_updates.HasReleaseChannel)
                 choices.Add(new ChoiceItem("updates", "Check for updates", "Install the newest GitHub release."));
+            if (_managedBrowser.IsRunning)
+                choices.Add(new ChoiceItem("browser-close", "Close managed browser", "End the isolated browser session and release its memory."));
+            if (_managedBrowser.HasProfileData)
+                choices.Add(new ChoiceItem("browser-forget", "Forget browser logins", "Clear cookies and site data saved only by Legion's browser."));
             if (_client != null && !String.IsNullOrWhiteSpace(_client.ThreadId))
             {
                 choices.Insert(0, new ChoiceItem("rename", "Rename chat", "Give this conversation a name."));
@@ -875,6 +883,25 @@ namespace CodexNativeLite
                 else if (action == "git") await ShowGitSnapshotAsync();
                 else if (action == "worktree") await CreateWorktreeAsync();
                 else if (action == "skills") await BrowseSkillsAsync();
+                else if (action == "browser-close")
+                {
+                    await _managedBrowser.ExecuteAsync("close", new Dictionary<string, object>());
+                    _browserApprovedForSession = false;
+                    SetStatus("Ready ✦", false);
+                }
+                else if (action == "browser-forget")
+                {
+                    bool forget = await ShowPromptAsync(
+                        "Forget managed browser logins?",
+                        "This clears cookies and site data from Legion’s isolated browser profile. Your everyday browser is untouched.",
+                        "Forget data",
+                        "Keep it",
+                        true);
+                    if (!forget) return;
+                    _managedBrowser.ClearProfileData();
+                    _browserApprovedForSession = false;
+                    SetStatus("Browser data cleared", false);
+                }
                 else if (action == "updates") await CheckForUpdatesAsync();
             }
             catch (Exception ex)

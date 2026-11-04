@@ -53,7 +53,7 @@ namespace CodexNativeLite
 
     public sealed partial class CodexAppServerClient : IDisposable
     {
-        private readonly JavaScriptSerializer _json = new JavaScriptSerializer();
+        private readonly JavaScriptSerializer _json = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
         private readonly ConcurrentDictionary<int, TaskCompletionSource<Dictionary<string, object>>> _pending =
             new ConcurrentDictionary<int, TaskCompletionSource<Dictionary<string, object>>>();
         private readonly object _writeLock = new object();
@@ -139,7 +139,7 @@ namespace CodexNativeLite
                 {
                     name = "codex_legion",
                     title = "Codex Legion",
-                    version = "0.2.0"
+                    version = typeof(CodexAppServerClient).Assembly.GetName().Version.ToString(3)
                 },
                 capabilities = new
                 {
@@ -202,6 +202,7 @@ namespace CodexNativeLite
             parameters["cwd"] = workingDirectory;
             parameters["serviceName"] = "codex_legion";
             parameters["threadSource"] = "codex_legion";
+            parameters["dynamicTools"] = BrowserToolContract.CreateSpecs();
             if (settings != null)
             {
                 if (!String.IsNullOrWhiteSpace(settings.Model)) parameters["model"] = settings.Model;

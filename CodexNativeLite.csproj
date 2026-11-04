@@ -58,6 +58,9 @@
     <Compile Include="RealtimeVoiceSession.cs" />
     <Compile Include="MainWindowVoice.cs" />
     <Compile Include="StarterWorkspace.cs" />
+    <Compile Include="BrowserToolContract.cs" />
+    <Compile Include="ManagedBrowser.cs" />
+    <Compile Include="MainWindowBrowser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

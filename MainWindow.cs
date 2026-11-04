@@ -708,6 +708,8 @@ namespace CodexNativeLite
                     AddActivity("Searching", CodexAppServerClient.GetString(item, "query"));
                 else if (type == "mcpToolCall")
                     AddActivity("App", CodexAppServerClient.GetString(item, "tool") ?? "Running an app tool");
+                else if (type == "dynamicToolCall")
+                    AddActivity("Browser", CodexAppServerClient.GetString(item, "tool") ?? "Using the managed browser");
                 else if (type == "reasoning")
                     AddActivity("Thinking", "Working through the problem");
             }
@@ -1618,6 +1620,7 @@ namespace CodexNativeLite
         {
             _metricsTimer.Stop();
             if (_voiceSession != null) _voiceSession.Dispose();
+            _managedBrowser.Dispose();
             try { _settingsStore.Save(_runtimeSettings); } catch { }
             if (_client != null) _client.Dispose();
             try

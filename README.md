@@ -17,7 +17,7 @@ Codex is excellent at the actual work: understanding a repository, changing file
 
 Codex Legion started with a simple question: **how much of that experience can live inside a genuinely native Windows shell?**
 
-The result is a WPF client that feels at home on Windows and leaves the agent work to a private Codex app-server process. There is no Chromium window, Node.js runtime, WebView, or local TCP service in the interface. The client and server talk directly over JSONL through standard input/output.
+The result is a WPF client that feels at home on Windows and leaves the agent work to a private Codex app-server process. There is no always-running Chromium window, Node.js runtime, or WebView in the interface. The client and server talk directly over JSONL through standard input/output.
 
 It is useful when you want:
 
@@ -31,6 +31,8 @@ It is useful when you want:
 Codex Legion covers the everyday coding loop: persistent chats, streaming replies, model selection, a snap-to-level thinking slider, approval modes, commands, file changes, plans, reasoning summaries, web searches, token usage, and native diff cards.
 
 You can stop or steer an active turn, attach images, use local skills, inspect Git status, create managed worktrees, and reopen or organize previous chats. Approval, permission, question, and MCP prompts stay inside the same themed interface instead of falling back to generic Windows dialogs.
+
+When a task needs a real webpage, Legion can launch a visible managed Edge or Chrome window. It uses a separate browser profile, starts only on demand, and disappears when you close it or exit Legion. Reading and scrolling stay quiet; clicking and typing follow your approval mode. Your everyday browser tabs, cookies, and extensions are left alone.
 
 Tap the microphone for a proper hands-free conversation—not push-to-talk. Legion listens for natural turns, speaks back, and lets you interrupt. The first tap opens a themed setup with a direct link to create an OpenAI API key. Once it connects, that key is protected for the current Windows user with DPAPI, so the next conversation is one click away. Voice usage comes from your OpenAI API credits.
 
@@ -67,7 +69,7 @@ Codex Legion — native WPF / .NET Framework UI
                 └── sandboxed local tools
 ```
 
-The UI keeps only lightweight rendered state. The Codex runtime lives in a separate child process, so its memory is visible independently and is released when the app closes. No server port is opened.
+The UI keeps only lightweight rendered state. The Codex runtime lives in a separate child process, so its memory is visible independently and is released when the app closes. No permanent server port is opened; managed browsing uses a random loopback debugging port only while its isolated browser is running.
 
 Codex itself is the open-source [OpenAI Codex runtime](https://github.com/openai/codex). Codex Legion is an independent community client and is not an official OpenAI application.
 
@@ -94,7 +96,7 @@ Windows already includes most of what the project needs:
 To create the installers, point the packager at a Codex Windows runtime directory:
 
 ```powershell
-./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.3.0 -Zip
+./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.5.0 -Zip
 ```
 
 The source intentionally stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.
