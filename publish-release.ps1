@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[^/]+/[^/]+$')]
     [string]$Repository,
-    [string]$Version = '0.6.1',
+    [string]$Version = '0.6.2',
     [string]$RuntimeSource,
     [ValidateSet('public', 'private')]
     [string]$Visibility = 'public'
@@ -73,7 +73,7 @@ try {
         'dist\CodexLegionSetup-offline.exe',
         'README.md'
     )
-    & $ghPath release create $tag @assets '--title' "Codex Legion $tag" '--notes' "Local models now download cleanly from GitHub on .NET Framework, and the picker shows actual hardware-ranked matches before the full catalog. Enter sends a message; Shift+Enter adds a new line."
+    & $ghPath release create $tag @assets '--title' "Codex Legion $tag" '--notes' "A small coffee stop has appeared in Legion’s sidebar. If the app earns a place on your desktop, you can now keep Sorin—and the next suspiciously quick side project—caffeinated."
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Host "Published https://github.com/$Repository/releases/tag/$tag"
 } finally {

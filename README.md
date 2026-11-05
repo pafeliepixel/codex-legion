@@ -9,6 +9,11 @@
   Private profile, real project tools, less desktop overhead.
 </p>
 
+<p align="center">
+  Built by Sorin, curiosity, and a suspicious number of “quick” side projects.<br>
+  <a href="https://buymeacoffee.com/Pafeliepixel">☕ Keep the Legion caffeinated</a>
+</p>
+
 ![Codex Legion interface](assets/readme-preview.svg)
 
 ## Why this exists
@@ -100,7 +105,7 @@ Windows already includes most of what the project needs:
 To create the installers, point the packager at a Codex Windows runtime directory:
 
 ```powershell
-./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.6.1 -Zip
+./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.6.2 -Zip
 ```
 
 The source stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.

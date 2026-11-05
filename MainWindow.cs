@@ -406,6 +406,16 @@ namespace CodexNativeLite
             var footer = new StackPanel { Margin = new Thickness(2, 22, 2, 0) };
             _memory = new TextBlock { Text = "Measuring…", Foreground = MutedBrush, FontSize = 11 };
             footer.Children.Add(_memory);
+            var coffee = MakeLinkButton("☕  Keep Legion caffeinated");
+            coffee.HorizontalAlignment = HorizontalAlignment.Left;
+            coffee.Margin = new Thickness(-6, 7, 0, 0);
+            coffee.ToolTip = "Buy Sorin a coffee";
+            coffee.Click += delegate
+            {
+                try { Process.Start(new ProcessStartInfo("https://buymeacoffee.com/Pafeliepixel") { UseShellExecute = true }); }
+                catch (Exception ex) { AddSystemCard("Coffee break interrupted", ex.Message); }
+            };
+            footer.Children.Add(coffee);
             Grid.SetRow(footer, 7);
             panel.Children.Add(footer);
             return new Border
