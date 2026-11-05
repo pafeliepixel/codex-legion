@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using System.Runtime.InteropServices;
 
 namespace CodexNativeLite
 {
@@ -64,6 +65,7 @@ namespace CodexNativeLite
         private Task _errorTask;
         private int _nextId;
         private string _lastLogLine;
+        private IntPtr _job;
 
         public event EventHandler<ServerMessageEventArgs> NotificationReceived;
         public event EventHandler<ServerMessageEventArgs> ServerRequestReceived;
@@ -127,6 +129,7 @@ namespace CodexNativeLite
             _process = new Process { StartInfo = start, EnableRaisingEvents = true };
             _process.Exited += delegate { OnDisconnected(); };
             if (!_process.Start()) throw new InvalidOperationException("Could not start codex app-server.");
+            AttachJob(_process);
             _input = _process.StandardInput;
             _input.AutoFlush = true;
 
@@ -610,13 +613,68 @@ namespace CodexNativeLite
             {
                 if (_process != null && !_process.HasExited)
                 {
-                    if (!_process.WaitForExit(700)) _process.Kill();
+                    if (!_process.WaitForExit(700))
+                    {
+                        if (_job != IntPtr.Zero) { CloseHandle(_job); _job = IntPtr.Zero; }
+                        else _process.Kill();
+                        _process.WaitForExit(700);
+                    }
                 }
             }
             catch { }
+            if (_job != IntPtr.Zero) { CloseHandle(_job); _job = IntPtr.Zero; }
             if (_process != null) _process.Dispose();
             if (_stop != null) _stop.Dispose();
         }
+
+        private void AttachJob(Process process)
+        {
+            try
+            {
+                IntPtr job = CreateJobObject(IntPtr.Zero, null);
+                if (job == IntPtr.Zero) return;
+                var limits = new JobObjectExtendedLimitInformation();
+                limits.BasicLimitInformation.LimitFlags = 0x00002000;
+                int size = Marshal.SizeOf(typeof(JobObjectExtendedLimitInformation));
+                IntPtr pointer = Marshal.AllocHGlobal(size);
+                try
+                {
+                    Marshal.StructureToPtr(limits, pointer, false);
+                    if (!SetInformationJobObject(job, 9, pointer, (uint)size) || !AssignProcessToJobObject(job, process.Handle))
+                    { CloseHandle(job); return; }
+                    _job = job;
+                }
+                finally { Marshal.FreeHGlobal(pointer); }
+            }
+            catch { }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JobObjectBasicLimitInformation
+        {
+            public long PerProcessUserTimeLimit, PerJobUserTimeLimit;
+            public uint LimitFlags;
+            public UIntPtr MinimumWorkingSetSize, MaximumWorkingSetSize;
+            public uint ActiveProcessLimit;
+            public UIntPtr Affinity;
+            public uint PriorityClass, SchedulingClass;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IoCounters
+        {
+            public ulong ReadOperationCount, WriteOperationCount, OtherOperationCount, ReadTransferCount, WriteTransferCount, OtherTransferCount;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JobObjectExtendedLimitInformation
+        {
+            public JobObjectBasicLimitInformation BasicLimitInformation;
+            public IoCounters IoInfo;
+            public UIntPtr ProcessMemoryLimit, JobMemoryLimit, PeakProcessMemoryUsed, PeakJobMemoryUsed;
+        }
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateJobObject(IntPtr attributes, string name);
+        [DllImport("kernel32.dll", SetLastError = true)] private static extern bool SetInformationJobObject(IntPtr job, int infoClass, IntPtr info, uint length);
+        [DllImport("kernel32.dll", SetLastError = true)] private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+        [DllImport("kernel32.dll", SetLastError = true)] private static extern bool CloseHandle(IntPtr handle);
 
         private static string ResolveCodexExecutable()
         {

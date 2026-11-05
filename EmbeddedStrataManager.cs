@@ -4,22 +4,24 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.Script.Serialization;
 
 namespace CodexNativeLite
 {
     public sealed class EmbeddedStrataManager : IDisposable
     {
-        public const string UpstreamVersion = "0.2.10";
-        public const string ControlVersion = "0.1.56";
-        public const string ControlSha256 = "ef74f429c60341048a68249d41699142a1ec3716cee322621875e823f4ead873";
-        public const long ControlDownloadBytes = 73292001;
+        public const string UpstreamVersion = "0.2.11";
+        public const string ControlVersion = "0.1.57";
+        public const string ControlSha256 = "e93caba92fd69398fa18e4e698c21e798e2e488c2d7ddb77b5272bec6d347d8f";
+        public const long ControlDownloadBytes = 73411113;
         public const int ServerPort = 18347;
-        private const string ControlUrl = "https://github.com/Niko1221/Strata/releases/download/v0.2.10/strata-control-0.1.56-windows-x86_64.zip";
+        private const string ControlUrl = "https://github.com/Niko1221/Strata/releases/download/v0.2.11/strata-control-0.1.57-windows-x86_64.zip";
 
         private readonly string _root;
         private readonly string _components;
@@ -28,6 +30,8 @@ namespace CodexNativeLite
         private IntPtr _job;
         private readonly object _logLock = new object();
         private readonly Queue<string> _recentLog = new Queue<string>();
+        private Task _outputPump;
+        private Task _errorPump;
         private bool _disposed;
 
         public EmbeddedStrataManager() : this(
@@ -58,6 +62,57 @@ namespace CodexNativeLite
         public bool IsRunning { get { try { return _process != null && !_process.HasExited; } catch { return false; } } }
         public bool IsReady { get; private set; }
         public LocalModelChoice ActiveModel { get; private set; }
+        public long WorkingSetBytes
+        {
+            get { try { return _process != null && !_process.HasExited ? _process.WorkingSet64 : 0; } catch { return 0; } }
+        }
+        public string InstalledControlVersion
+        {
+            get
+            {
+                if (IsControlReady) return ControlVersion;
+                try
+                {
+                    string root = Path.Combine(_components, "control");
+                    if (!Directory.Exists(root)) return null;
+                    Version newestVersion = null;
+                    string newest = null;
+                    foreach (string directory in Directory.GetDirectories(root))
+                    {
+                        if (!File.Exists(Path.Combine(directory, "strata.py")) || !File.Exists(Path.Combine(directory, "python", "python.exe"))) continue;
+                        Version parsed;
+                        string name = Path.GetFileName(directory);
+                        if (!Version.TryParse(name, out parsed)) continue;
+                        if (newestVersion == null || parsed > newestVersion) { newestVersion = parsed; newest = name; }
+                    }
+                    return newest;
+                }
+                catch { return null; }
+            }
+        }
+        public bool HasInstalledControl { get { return !String.IsNullOrWhiteSpace(InstalledControlVersion); } }
+        public string InstalledEngineVersion
+        {
+            get
+            {
+                try
+                {
+                    string root = Path.Combine(_components, "engine");
+                    if (!Directory.Exists(root)) return null;
+                    string newest = null;
+                    DateTime changed = DateTime.MinValue;
+                    foreach (string directory in Directory.GetDirectories(root))
+                    {
+                        DateTime value = Directory.GetLastWriteTimeUtc(directory);
+                        if (value > changed) { changed = value; newest = Path.GetFileName(directory); }
+                    }
+                    if (String.IsNullOrWhiteSpace(newest)) return null;
+                    int dash = newest.IndexOf('-');
+                    return dash > 0 ? newest.Substring(0, dash) : newest;
+                }
+                catch { return null; }
+            }
+        }
         internal string ControlDirectory { get { return _control; } }
 
         internal void InstallControlArchiveForTest(string archive)
@@ -89,7 +144,7 @@ namespace CodexNativeLite
                 {
                     using (var client = new WebClient())
                     {
-                        client.Headers[HttpRequestHeader.UserAgent] = "Codex-Legion/0.6.1";
+                        client.Headers[HttpRequestHeader.UserAgent] = "Codex-Legion/" + typeof(EmbeddedStrataManager).Assembly.GetName().Version.ToString(3);
                         client.DownloadProgressChanged += delegate(object sender, DownloadProgressChangedEventArgs e)
                         {
                             if (progress != null) progress(e.ProgressPercentage, "Downloading the local AI control bundle");
@@ -124,7 +179,62 @@ namespace CodexNativeLite
             return String.IsNullOrWhiteSpace(result.Output) ? "The model plan is ready." : result.Output.Trim();
         }
 
+        public async Task<LocalComponentUpdateInfo> CheckComponentUpdatesAsync(Action<string> activity)
+        {
+            if (!IsControlReady) return new LocalComponentUpdateInfo { CheckSucceeded = true, Summary = "Local AI is not installed." };
+            ProcessResult result = await RunOneShotAsync(BuildUpdateArguments(true), activity).ConfigureAwait(false);
+            if (result.ExitCode != 0) throw new InvalidOperationException(UsefulError(result));
+            return ParseComponentUpdateCheck(result.Output);
+        }
+
+        public async Task<string> UpdateComponentsAsync(Action<string> activity)
+        {
+            if (!IsControlReady) throw new InvalidOperationException("The local AI control bundle is not installed.");
+            Stop();
+            ProcessResult result = await RunOneShotAsync(BuildUpdateArguments(false), activity).ConfigureAwait(false);
+            if (result.ExitCode != 0) throw new InvalidOperationException(UsefulError(result));
+            return String.IsNullOrWhiteSpace(result.Output) ? "The local AI engine is current." : result.Output.Trim();
+        }
+
+        internal static LocalComponentUpdateInfo ParseComponentUpdateCheck(string output)
+        {
+            var info = new LocalComponentUpdateInfo { Raw = output };
+            if (String.IsNullOrWhiteSpace(output)) { info.Summary = "Strata returned no update report."; return info; }
+            try
+            {
+                var json = new JavaScriptSerializer();
+                var root = json.Deserialize<Dictionary<string, object>>(output.Trim());
+                info.CheckSucceeded = ReadBool(root, "ok", true);
+                var engine = ReadDictionary(root, "engine");
+                string status = ReadString(engine, "status");
+                var installed = ReadDictionary(engine, "installed");
+                var offered = ReadDictionary(engine, "offered");
+                info.InstalledVersion = ReadString(installed, "version");
+                info.OfferedVersion = ReadString(offered, "version");
+                info.DownloadBytes = ReadLong(engine, "download_bytes");
+                info.UpdateAvailable = status == "available" || status == "install";
+                var deepSeek = ReadDictionary(root, "dsv41");
+                if (ReadString(deepSeek, "status") == "available") info.UpdateAvailable = true;
+                if (info.UpdateAvailable)
+                {
+                    string versions = String.IsNullOrWhiteSpace(info.OfferedVersion) ? "a newer engine" : info.OfferedVersion;
+                    info.Summary = "Local AI update ready · " + versions + (info.DownloadBytes > 0 ? " · " + LocalModelStorage.FormatBytes(info.DownloadBytes) : "");
+                }
+                else info.Summary = status == "current" ? "Local AI engine is current." : (ReadString(engine, "note") ?? "No local AI engine update is needed.");
+            }
+            catch (Exception ex)
+            {
+                info.Summary = "Could not read Strata’s update report: " + ex.Message;
+            }
+            return info;
+        }
+
         public async Task StartAsync(LocalModelChoice model, Action<string> activity, CancellationToken cancellationToken)
+        {
+            await StartAsync(model, activity, null, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task StartAsync(LocalModelChoice model, Action<string> activity, Action<LocalDownloadProgress> progress, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             if (model == null) throw new ArgumentNullException("model");
@@ -134,12 +244,12 @@ namespace CodexNativeLite
             Directory.CreateDirectory(Path.Combine(_root, "install"));
             var start = CreateStartInfo(BuildLaunchArguments(model, false));
             _process = new Process { StartInfo = start, EnableRaisingEvents = true };
-            _process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e) { OnLine(e.Data, activity); };
-            _process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e) { OnLine(e.Data, activity); };
             if (!_process.Start()) throw new InvalidOperationException("Could not start Legion's local AI engine.");
             AttachJob(_process);
-            _process.BeginOutputReadLine();
-            _process.BeginErrorReadLine();
+            var parser = new LocalDownloadProgressParser();
+            var parserLock = new object();
+            _outputPump = PumpReaderAsync(_process.StandardOutput, activity, progress, parser, parserLock);
+            _errorPump = PumpReaderAsync(_process.StandardError, activity, progress, parser, parserLock);
             ActiveModel = model;
             IsReady = false;
 
@@ -174,12 +284,37 @@ namespace CodexNativeLite
                 }
             }
             catch { }
-            finally { if (process != null) process.Dispose(); }
+            finally
+            {
+                try
+                {
+                    var pumps = new List<Task>();
+                    if (_outputPump != null) pumps.Add(_outputPump);
+                    if (_errorPump != null) pumps.Add(_errorPump);
+                    if (pumps.Count > 0) Task.WaitAll(pumps.ToArray(), 800);
+                }
+                catch { }
+                _outputPump = null;
+                _errorPump = null;
+                if (process != null) process.Dispose();
+            }
             if (_job != IntPtr.Zero)
             {
                 CloseHandle(_job);
                 _job = IntPtr.Zero;
             }
+        }
+
+        public async Task<bool> UnloadAsync()
+        {
+            Stop();
+            DateTime deadline = DateTime.UtcNow.AddSeconds(3);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (!PortIsOpen(ServerPort)) return true;
+                await Task.Delay(100).ConfigureAwait(false);
+            }
+            return !PortIsOpen(ServerPort);
         }
 
         public void Dispose()
@@ -204,6 +339,19 @@ namespace CodexNativeLite
             };
             if (plan) arguments.Add("--plan");
             else arguments.Add("--yes");
+            return JoinArguments(arguments);
+        }
+
+        private string BuildUpdateArguments(bool check)
+        {
+            var arguments = new List<string>
+            {
+                Path.Combine(_control, "strata.py"), "update",
+                "--components-dir", _components,
+                "--no-control", "--yes", "--output", "json",
+                "--app-version", typeof(EmbeddedStrataManager).Assembly.GetName().Version.ToString(3)
+            };
+            if (check) arguments.Add("--check");
             return JoinArguments(arguments);
         }
 
@@ -327,6 +475,50 @@ namespace CodexNativeLite
             if (activity != null) activity(clean.Length > 220 ? clean.Substring(0, 220) + "…" : clean);
         }
 
+        private async Task PumpReaderAsync(StreamReader reader, Action<string> activity, Action<LocalDownloadProgress> progress, LocalDownloadProgressParser parser, object parserLock)
+        {
+            var buffer = new LocalProgressTextBuffer();
+            var chars = new char[1024];
+            try
+            {
+                while (true)
+                {
+                    int count = await reader.ReadAsync(chars, 0, chars.Length).ConfigureAwait(false);
+                    if (count <= 0) break;
+                    foreach (string line in buffer.Feed(chars, count))
+                        DispatchOutput(line, activity, progress, parser, parserLock);
+                }
+                string tail = buffer.Flush();
+                if (!String.IsNullOrWhiteSpace(tail)) DispatchOutput(tail, activity, progress, parser, parserLock);
+            }
+            catch (ObjectDisposedException) { }
+            catch (IOException) { }
+        }
+
+        private void DispatchOutput(string line, Action<string> activity, Action<LocalDownloadProgress> progress, LocalDownloadProgressParser parser, object parserLock)
+        {
+            LocalDownloadProgress parsed;
+            bool matched;
+            lock (parserLock) matched = parser.TryParse(line, DateTime.UtcNow, out parsed);
+            if (matched && progress != null) progress(parsed);
+            else OnLine(line, activity);
+        }
+
+        private static bool PortIsOpen(int port)
+        {
+            try
+            {
+                using (var client = new TcpClient())
+                {
+                    IAsyncResult result = client.BeginConnect(IPAddress.Loopback, port, null, null);
+                    if (!result.AsyncWaitHandle.WaitOne(120)) return false;
+                    client.EndConnect(result);
+                    return true;
+                }
+            }
+            catch { return false; }
+        }
+
         private string RecentError()
         {
             lock (_logLock)
@@ -342,6 +534,32 @@ namespace CodexNativeLite
             string error = LastUsefulLine(result.Error);
             if (String.IsNullOrWhiteSpace(error)) error = LastUsefulLine(result.Output);
             return String.IsNullOrWhiteSpace(error) ? "The local model plan could not be created." : error;
+        }
+
+        private static Dictionary<string, object> ReadDictionary(Dictionary<string, object> source, string key)
+        {
+            object value;
+            return source != null && source.TryGetValue(key, out value) ? value as Dictionary<string, object> ?? new Dictionary<string, object>() : new Dictionary<string, object>();
+        }
+
+        private static string ReadString(Dictionary<string, object> source, string key)
+        {
+            object value;
+            return source != null && source.TryGetValue(key, out value) && value != null ? Convert.ToString(value) : null;
+        }
+
+        private static bool ReadBool(Dictionary<string, object> source, string key, bool fallback)
+        {
+            object value;
+            if (source == null || !source.TryGetValue(key, out value) || value == null) return fallback;
+            try { return Convert.ToBoolean(value); } catch { return fallback; }
+        }
+
+        private static long ReadLong(Dictionary<string, object> source, string key)
+        {
+            object value;
+            if (source == null || !source.TryGetValue(key, out value) || value == null) return 0;
+            try { return Convert.ToInt64(value); } catch { return 0; }
         }
 
         private static string LastUsefulLine(string value)

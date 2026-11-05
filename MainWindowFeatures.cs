@@ -838,7 +838,7 @@ namespace CodexNativeLite
                 new ChoiceItem("local-models", "Local models", "Match this PC with downloadable models and run one inside Legion.", null, "◆")
             };
             if (_localAi.IsRunning)
-                choices.Add(new ChoiceItem("local-stop", "Stop local model", "Release its RAM and VRAM.", null, "■"));
+                choices.Add(new ChoiceItem("local-stop", "Unload local model", "Release RAM and VRAM while keeping its files.", null, "■"));
             if (_updates.HasReleaseChannel)
                 choices.Add(new ChoiceItem("updates", "Check for updates", "Install the newest GitHub release."));
             if (_managedBrowser.IsRunning)
@@ -923,11 +923,7 @@ namespace CodexNativeLite
                 else if (action == "local-models") await ShowLocalModelsAsync();
                 else if (action == "local-stop")
                 {
-                    if (_localAiStartStop != null) _localAiStartStop.Cancel();
-                    _localAi.Stop();
-                    _runtimeSettings.LocalBaseUrl = null;
-                    SetStatus("Local model stopped", false);
-                    UpdateRuntimeButtons();
+                    await UnloadLocalModelAsync("Local model unloaded", true);
                 }
                 else if (action == "browser-close")
                 {
@@ -1003,24 +999,51 @@ namespace CodexNativeLite
 
         private async Task CheckForUpdatesAsync()
         {
-            SetStatus("Checking GitHub…", false);
+            SetStatus("Checking Legion and its components…", false);
             UpdateCheckResult update = await _updates.CheckAsync();
+            ComponentAuditResult audit = ComponentAuditor.Audit(AppDomain.CurrentDomain.BaseDirectory, _localAi, _localModelStorage, _localAi.ModelDirectory);
+            LocalComponentUpdateInfo localUpdate = null;
+            if (_localAi.IsControlReady)
+            {
+                try { localUpdate = await _localAi.CheckComponentUpdatesAsync(null); }
+                catch (Exception ex) { AddActivity("Local AI update check", ex.Message); }
+            }
+            string componentSummary = audit.FriendlySummary();
+            if (localUpdate != null && !String.IsNullOrWhiteSpace(localUpdate.Summary)) componentSummary += "\n" + (localUpdate.UpdateAvailable ? "↻" : "✓") + "  Signed Strata feed · " + localUpdate.Summary;
             if (!update.IsConfigured)
             {
                 SetStatus("Updates not connected yet", false);
-                await ShowPromptAsync("Updates aren’t connected yet", "The GitHub release channel will be added when this build is published.", "Got it", "Close", false);
+                await ShowPromptAsync("Component check", componentSummary, "Done", "Close", false);
                 return;
             }
             if (!String.IsNullOrWhiteSpace(update.Error))
             {
                 SetStatus("Update check failed", true);
-                AddSystemCard("Couldn’t check for updates", update.Error);
+                AddSystemCard("Couldn’t check Legion’s release", update.Error + "\n\nLocal component check\n" + componentSummary);
+                if (localUpdate != null && localUpdate.UpdateAvailable) await OfferLocalComponentUpdateAsync(localUpdate);
                 return;
             }
             if (!update.IsUpdateAvailable)
             {
-                SetStatus("You’re up to date", false);
-                await ShowPromptAsync("You’re up to date", "Codex Legion " + update.CurrentVersion.ToString(3) + " is the latest version.", "Done", "Close", false);
+                if (_localAi.HasInstalledControl && !_localAi.IsControlReady)
+                {
+                    SetStatus("Local AI helper update ready", false);
+                    if (await OfferPinnedControlUpdateAsync())
+                    {
+                        LocalComponentUpdateInfo refreshed = await _localAi.CheckComponentUpdatesAsync(null);
+                        if (refreshed.UpdateAvailable) await OfferLocalComponentUpdateAsync(refreshed);
+                        else await ShowPromptAsync("Everything looks good", "Codex Legion " + update.CurrentVersion.ToString(3) + " and its local AI components are current.", "Done", "Close", false);
+                    }
+                    return;
+                }
+                if (localUpdate != null && localUpdate.UpdateAvailable)
+                {
+                    SetStatus("Local AI update ready", false);
+                    await OfferLocalComponentUpdateAsync(localUpdate);
+                    return;
+                }
+                SetStatus("Everything is current", false);
+                await ShowPromptAsync("Everything looks good", "Codex Legion " + update.CurrentVersion.ToString(3) + " is current.\n\n" + componentSummary, "Done", "Close", false);
                 return;
             }
 
@@ -1028,7 +1051,7 @@ namespace CodexNativeLite
             if (notes.Length > 900) notes = notes.Substring(0, 897) + "…";
             bool download = await ShowPromptAsync(
                 "Codex Legion " + update.LatestVersion.ToString(3),
-                notes,
+                notes + "\n\nComponent check\n" + componentSummary,
                 "Download update",
                 "Not now",
                 false);
@@ -1043,6 +1066,7 @@ namespace CodexNativeLite
                 "Later",
                 false);
             if (!install) { SetStatus("Update downloaded", false); return; }
+            if (_localAi.IsRunning || _localAiBusy) await UnloadLocalModelAsync("Local model unloaded for update", false);
             Process.Start(new ProcessStartInfo(installer) { UseShellExecute = true });
             AnimateClose();
         }

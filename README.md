@@ -41,7 +41,7 @@ You can stop or steer an active turn, attach images, use local skills, inspect G
 
 When a task needs a real webpage, Legion can launch a visible managed Edge or Chrome window. It uses a separate browser profile, starts only on demand, and disappears when you close it or exit Legion. Reading and scrolling stay quiet; clicking and typing follow your approval mode. Your everyday browser tabs, cookies, and extensions are left alone.
 
-Prefer to keep the model close too? Open **Local models** and Legion checks the PC's RAM, GPU, VRAM, and free space, then ranks a set of downloadable models. Pick one and Legion brings in a pinned Strata control bundle, the matching hardware engine, and the model itself. Strata never needs to be installed: there is no extra app, service, Start menu entry, or PATH change. The engine runs as Legion's child on loopback port `18347` and stops with the app.
+Prefer to keep the model close too? Open **Local models** and Legion checks the PC's RAM, GPU, VRAM, and free space, then ranks a set of downloadable models. Pick one and Legion brings in a pinned Strata control bundle, the matching hardware engine, and the model itself. You can watch the download, pause and resume it, remove models or unfinished downloads, and fully unload a running model whenever you want the RAM and VRAM back. Strata never needs to be installed: there is no extra app, service, Start menu entry, or PATH change. The engine runs as Legion's child on loopback port `18347` and stops with the app.
 
 The regular installers stay small because local AI is entirely optional. The 73 MB control bundle, hardware engine, and model files are downloaded only after a size-and-license prompt, verified by the embedded engine, and kept in Legion's private data plus the model folder you choose. Model downloads range from roughly 24 GB to well over 250 GB.
 
@@ -90,7 +90,7 @@ No mystery meat here. Every line of Codex Legion’s own code is in this reposit
 
 ## Updates without surprises
 
-**Tools → Check for updates** reads the latest public GitHub release. If a newer version exists, Codex Legion downloads the small installer, verifies its SHA-256 digest, and asks before launching it.
+**Tools → Check for updates** checks Legion together with its private runtime, Strata helper, hardware engine, local models, and managed browser. If a newer Legion version exists, it downloads the small installer, verifies its SHA-256 digest, and asks before launching it. Strata updates use its signed hardware-aware feed, so the right engine follows the right PC.
 
 The web installer fetches a runtime only when it is missing or its pinned fingerprint changed. The larger offline installer already carries the same verified runtime.
 
@@ -107,7 +107,7 @@ Windows already includes most of what the project needs:
 To create the installers, point the packager at a Codex Windows runtime directory:
 
 ```powershell
-./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.7.0 -Zip
+./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.7.1 -Zip
 ```
 
 The source stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.

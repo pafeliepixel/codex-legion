@@ -52,6 +52,7 @@
     <Compile Include="ProtocolModels.cs" />
     <Compile Include="AppSettingsStore.cs" />
     <Compile Include="UpdateService.cs" />
+    <Compile Include="ComponentUpdates.cs" />
     <Compile Include="GitService.cs" />
     <Compile Include="MainWindow.cs" />
     <Compile Include="MainWindowFeatures.cs" />
@@ -66,6 +67,8 @@
     <Compile Include="ManagedBrowser.cs" />
     <Compile Include="MainWindowBrowser.cs" />
     <Compile Include="LocalModelCatalog.cs" />
+    <Compile Include="LocalModelStorage.cs" />
+    <Compile Include="LocalDownloadProgress.cs" />
     <Compile Include="EmbeddedStrataManager.cs" />
     <Compile Include="MainWindowLocalAi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

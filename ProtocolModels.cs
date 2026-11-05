@@ -48,6 +48,7 @@ namespace CodexNativeLite
         public string LocalModelDirectory { get; set; }
         public string LocalBaseUrl { get; set; }
         public string ParallelMode { get; set; }
+        public string LastComponentAuditVersion { get; set; }
 
         public RuntimeSettings()
         {

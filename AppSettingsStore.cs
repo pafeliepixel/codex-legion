@@ -33,6 +33,7 @@ namespace CodexNativeLite
                 target.LocalModelDirectory = Read(values, "localModelDirectory");
                 string parallel = Read(values, "parallelMode");
                 if (parallel == "solo" || parallel == "asked" || parallel == "smart") target.ParallelMode = parallel;
+                target.LastComponentAuditVersion = Read(values, "lastComponentAuditVersion");
                 string permission = Read(values, "permissionMode");
                 if (permission == "read-only" || permission == "ask" || permission == "auto-review" || permission == "full")
                     target.PermissionMode = permission;
@@ -54,7 +55,8 @@ namespace CodexNativeLite
                 { "modelProvider", settings.ModelProvider },
                 { "localModelId", settings.LocalModelId },
                 { "localModelDirectory", settings.LocalModelDirectory },
-                { "parallelMode", settings.ParallelMode }
+                { "parallelMode", settings.ParallelMode },
+                { "lastComponentAuditVersion", settings.LastComponentAuditVersion }
             };
             string temporary = _path + ".tmp";
             File.WriteAllText(temporary, _json.Serialize(values));

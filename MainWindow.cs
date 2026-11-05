@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -55,6 +56,8 @@ namespace CodexNativeLite
         private bool _authenticated;
         private bool _loginPending;
         private bool _promptOpen;
+        private bool _shutdownStarted;
+        private readonly object _shutdownLock = new object();
         private readonly ProfileSecurity _profileSecurity;
         private readonly DispatcherTimer _metricsTimer = new DispatcherTimer();
 
@@ -95,7 +98,9 @@ namespace CodexNativeLite
             _importHistoryButton.IsEnabled = false;
 
             Loaded += OnLoaded;
+            Closing += OnClosing;
             Closed += OnClosed;
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
             _metricsTimer.Interval = TimeSpan.FromSeconds(2);
             _metricsTimer.Tick += delegate { UpdateMemory(); };
         }
@@ -280,6 +285,7 @@ namespace CodexNativeLite
 
         private void AnimateClose()
         {
+            if (_shutdownStarted) { Close(); return; }
             if (_root == null) { Close(); return; }
             var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(110))
             {
@@ -450,6 +456,7 @@ namespace CodexNativeLite
             grid.Children.Add(title);
 
             var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            actions.Children.Add(BuildLocalUnloadButton());
             _stopButton = MakeButton("Stop", false);
             _stopButton.Visibility = Visibility.Collapsed;
             _stopButton.VerticalAlignment = VerticalAlignment.Center;
@@ -580,6 +587,7 @@ namespace CodexNativeLite
                 return;
             }
             await ConnectAsync();
+            await CheckLocalComponentsAfterAppUpdateAsync();
             _composer.Focus();
         }
 
@@ -1657,18 +1665,42 @@ namespace CodexNativeLite
             long own = 0;
             try { own = Process.GetCurrentProcess().WorkingSet64; } catch { }
             long child = _client != null ? _client.WorkingSetBytes : 0;
-            _memory.Text = String.Format("UI {0:0} MB · Codex {1:0} MB", own / 1048576.0, child / 1048576.0);
+            long local = _localAi.WorkingSetBytes;
+            _memory.Text = String.Format("UI {0:0} MB · Codex {1:0} MB", own / 1048576.0, child / 1048576.0)
+                + (local > 0 ? String.Format(" · Local AI {0:0} MB", local / 1048576.0) : "");
+        }
+
+        private void OnClosing(object sender, CancelEventArgs e)
+        {
+            ShutdownComponents();
         }
 
         private void OnClosed(object sender, EventArgs e)
         {
-            _metricsTimer.Stop();
-            if (_voiceSession != null) _voiceSession.Dispose();
-            _managedBrowser.Dispose();
-            if (_localAiStartStop != null) _localAiStartStop.Cancel();
-            _localAi.Dispose();
+            ShutdownComponents();
+        }
+
+        private void OnProcessExit(object sender, EventArgs e)
+        {
+            ShutdownComponents();
+        }
+
+        private void ShutdownComponents()
+        {
+            lock (_shutdownLock)
+            {
+                if (_shutdownStarted) return;
+                _shutdownStarted = true;
+            }
+            try { _metricsTimer.Stop(); } catch { }
+            try { if (_voiceSession != null) _voiceSession.Dispose(); } catch { }
+            _voiceSession = null;
+            try { _managedBrowser.Dispose(); } catch { }
+            try { if (_localAiStartStop != null) _localAiStartStop.Cancel(); } catch { }
+            try { _localAi.Dispose(); } catch { }
             try { _settingsStore.Save(_runtimeSettings); } catch { }
-            if (_client != null) _client.Dispose();
+            try { if (_client != null) _client.Dispose(); } catch { }
+            _client = null;
             try
             {
                 if (_profileSecurity.HasPin) _profileSecurity.SealCredentials();

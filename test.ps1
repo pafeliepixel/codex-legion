@@ -57,7 +57,11 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     "/reference:$frameworkRoot\System.Management.dll" `
     "/reference:$frameworkRoot\System.IO.Compression.dll" `
     "/reference:$frameworkRoot\System.IO.Compression.FileSystem.dll" `
+    "/reference:$frameworkRoot\System.Web.Extensions.dll" `
     (Join-Path $projectRoot 'LocalModelCatalog.cs') `
+    (Join-Path $projectRoot 'LocalModelStorage.cs') `
+    (Join-Path $projectRoot 'LocalDownloadProgress.cs') `
+    (Join-Path $projectRoot 'ComponentUpdates.cs') `
     (Join-Path $projectRoot 'EmbeddedStrataManager.cs') `
     (Join-Path $projectRoot 'tests\LocalModelSmoke.cs')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
