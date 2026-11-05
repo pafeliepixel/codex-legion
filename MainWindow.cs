@@ -487,7 +487,7 @@ namespace CodexNativeLite
                 BorderThickness = new Thickness(0),
                 Padding = new Thickness(14, 12, 14, 8),
                 FontSize = 14,
-                ToolTip = "Ctrl+Enter to send"
+                ToolTip = "Enter to send · Shift+Enter for a new line"
             };
             _composer.PreviewKeyDown += ComposerKeyDown;
             grid.Children.Add(_composer);
@@ -1425,7 +1425,7 @@ namespace CodexNativeLite
 
         private async void ComposerKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) != ModifierKeys.Shift)
             {
                 e.Handled = true;
                 await SendAsync();

@@ -16,6 +16,8 @@ internal static class LocalModelSmoke
             var small = new LocalHardwareProfile { TotalMemoryBytes = 16L * 1024 * 1024 * 1024, FreeDiskBytes = 300L * 1024 * 1024 * 1024 };
             small.Gpus.Add(new LocalGpuInfo { Name = "NVIDIA RTX test", MemoryBytes = 8L * 1024 * 1024 * 1024 });
             Assert(LocalModelCatalog.Find("qwen38-iq3s").Rating(small) == "Not recommended", "A 16 GB PC received an unsafe recommendation.");
+            var balanced = new LocalHardwareProfile { TotalMemoryBytes = 32L * 1024 * 1024 * 1024, FreeDiskBytes = 300L * 1024 * 1024 * 1024 };
+            balanced.Gpus.Add(new LocalGpuInfo { Name = "NVIDIA RTX test", MemoryBytes = 8L * 1024 * 1024 * 1024 });
             var roomy = new LocalHardwareProfile { TotalMemoryBytes = 64L * 1024 * 1024 * 1024, FreeDiskBytes = 400L * 1024 * 1024 * 1024 };
             roomy.Gpus.Add(new LocalGpuInfo { Name = "NVIDIA RTX test", MemoryBytes = 16L * 1024 * 1024 * 1024 });
             Assert(LocalModelCatalog.Find("qwen38-iq2").Rating(roomy) == "Comfortable", "A suitable 64 GB PC was not recognized.");
@@ -26,7 +28,14 @@ internal static class LocalModelSmoke
                 Assert(manager.BaseUrl == "http://127.0.0.1:18347/v1", "The Legion-local endpoint changed unexpectedly.");
                 Assert(EmbeddedStrataManager.ControlSha256.Length == 64, "The pinned control hash is malformed.");
             }
+            EmbeddedStrataManager.EnableTls12();
+            Assert((System.Net.ServicePointManager.SecurityProtocol & System.Net.SecurityProtocolType.Tls12) != 0, "TLS 1.2 was not enabled for GitHub downloads.");
+            List<LocalModelChoice> balancedRanked = LocalModelCatalog.Rank(balanced);
+            Assert(balancedRanked[0].Id == "qwen36-q4", "The 32 GB recommendation is not practical.");
+            List<LocalModelChoice> roomyRanked = LocalModelCatalog.Rank(roomy);
+            Assert(roomyRanked[0].Id == "qwen38-iq3s", "The 64 GB recommendation is not using the stronger fitting model.");
             if (args.Length == 2 && args[0] == "--control-archive") RunControlArchiveTest(args[1]);
+            if (args.Length == 1 && args[0] == "--download-control") RunControlDownloadTest();
             Console.WriteLine("Local model catalog and hardware smoke test passed.");
             return 0;
         }
@@ -74,6 +83,23 @@ internal static class LocalModelSmoke
                     string plan = manager.PlanAsync(model, null).GetAwaiter().GetResult();
                     Assert(!String.IsNullOrWhiteSpace(plan), "The embedded engine returned an empty plan for " + model.Id + ".");
                 }
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
+    private static void RunControlDownloadTest()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "cldl-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+        try
+        {
+            using (var manager = new EmbeddedStrataManager(root, Path.Combine(root, "models")))
+            {
+                manager.EnsureControlAsync(null).GetAwaiter().GetResult();
+                Assert(manager.IsControlReady, "The real GitHub control download did not install cleanly.");
             }
         }
         finally

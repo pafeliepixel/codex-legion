@@ -67,6 +67,13 @@ namespace CodexNativeLite
             InstallControlArchive(archive);
         }
 
+        internal static void EnableTls12()
+        {
+            // .NET Framework applications can otherwise inherit the older TLS
+            // default, which GitHub correctly refuses for release downloads.
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+        }
+
         public async Task EnsureControlAsync(Action<int, string> progress)
         {
             ThrowIfDisposed();
@@ -77,14 +84,23 @@ namespace CodexNativeLite
             if (!File.Exists(archive) || !String.Equals(HashFile(archive), ControlSha256, StringComparison.OrdinalIgnoreCase))
             {
                 if (File.Exists(archive)) File.Delete(archive);
-                using (var client = new WebClient())
+                EnableTls12();
+                try
                 {
-                    client.Headers[HttpRequestHeader.UserAgent] = "Codex-Legion/0.6";
-                    client.DownloadProgressChanged += delegate(object sender, DownloadProgressChangedEventArgs e)
+                    using (var client = new WebClient())
                     {
-                        if (progress != null) progress(e.ProgressPercentage, "Downloading the local AI control bundle");
-                    };
-                    await client.DownloadFileTaskAsync(new Uri(ControlUrl), archive).ConfigureAwait(false);
+                        client.Headers[HttpRequestHeader.UserAgent] = "Codex-Legion/0.6.1";
+                        client.DownloadProgressChanged += delegate(object sender, DownloadProgressChangedEventArgs e)
+                        {
+                            if (progress != null) progress(e.ProgressPercentage, "Downloading the local AI control bundle");
+                        };
+                        await client.DownloadFileTaskAsync(new Uri(ControlUrl), archive).ConfigureAwait(false);
+                    }
+                }
+                catch (WebException ex)
+                {
+                    try { if (File.Exists(archive)) File.Delete(archive); } catch { }
+                    throw new InvalidOperationException("Couldn’t download the local engine from GitHub. Check your connection and try again.", ex);
                 }
             }
             string digest = HashFile(archive);

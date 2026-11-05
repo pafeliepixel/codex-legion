@@ -100,7 +100,7 @@ Windows already includes most of what the project needs:
 To create the installers, point the packager at a Codex Windows runtime directory:
 
 ```powershell
-./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.6.0 -Zip
+./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.6.1 -Zip
 ```
 
 The source stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.

@@ -15,29 +15,43 @@ namespace CodexNativeLite
 
         private async Task ShowLocalModelsAsync()
         {
+            await ShowLocalModelsAsync(false);
+        }
+
+        private async Task ShowLocalModelsAsync(bool showAll)
+        {
             string savedDirectory = _runtimeSettings.LocalModelDirectory;
             if (!String.IsNullOrWhiteSpace(savedDirectory)) _localAi.ModelDirectory = savedDirectory;
             LocalHardwareProfile hardware = LocalHardwareDetector.Detect(_localAi.ModelDirectory);
-            var choices = new List<ChoiceItem>
+            var choices = new List<ChoiceItem>();
+            List<LocalModelChoice> ranked = LocalModelCatalog.Rank(hardware);
+            int shown = 0;
+            foreach (LocalModelChoice model in ranked)
             {
-                new ChoiceItem("folder", "Model folder", CompactPath(_localAi.ModelDirectory), null, "▤")
-            };
-            if (_runtimeSettings.UsesLocalModel)
-                choices.Add(new ChoiceItem("cloud", "Back to OpenAI models", "Stop the local engine and begin a new cloud chat.", null, "☁"));
-            foreach (LocalModelChoice model in LocalModelCatalog.Create())
-            {
+                if (!showAll && (!LocalModelCatalog.IsRecommended(model, hardware) || shown >= 3)) continue;
                 string rating = model.Rating(hardware);
                 string icon = rating == "Comfortable" ? "✓" : (rating == "Tight fit" ? "~" : (rating == "Not supported" ? "×" : "!"));
-                choices.Add(new ChoiceItem(model.Id, model.Name, model.Recommendation(hardware), null, icon));
+                string label = showAll ? model.Name : ((shown == 0 ? "Best match · " : "Good fit · ") + model.Name);
+                choices.Add(new ChoiceItem(model.Id, label, model.Recommendation(hardware), null, showAll ? icon : (shown == 0 ? "✦" : icon)));
+                shown++;
             }
+            if (showAll)
+                choices.Add(new ChoiceItem("matches", "Back to best matches", "Show the models Legion picked for this PC.", null, "‹"));
+            else
+                choices.Add(new ChoiceItem("all", "Browse every model", shown == 0 ? "No good match was found. See the full catalog anyway." : "Larger and unsupported models live here.", null, "…"));
+            choices.Add(new ChoiceItem("folder", "Model folder", CompactPath(_localAi.ModelDirectory), null, "▤"));
+            if (_runtimeSettings.UsesLocalModel)
+                choices.Add(new ChoiceItem("cloud", "Back to OpenAI models", "Stop the local engine and begin a new cloud chat.", null, "☁"));
 
-            string selected = await ShowChoiceAsync("Local models", HardwareSummary(hardware), choices);
+            string selected = await ShowChoiceAsync(showAll ? "All local models" : "Best local matches", HardwareSummary(hardware, shown), choices);
             if (selected == "folder")
             {
                 ChooseLocalModelFolder();
-                await ShowLocalModelsAsync();
+                await ShowLocalModelsAsync(showAll);
                 return;
             }
+            if (selected == "all") { await ShowLocalModelsAsync(true); return; }
+            if (selected == "matches") { await ShowLocalModelsAsync(false); return; }
             if (selected == "cloud")
             {
                 _localAi.Stop();
@@ -61,7 +75,7 @@ namespace CodexNativeLite
                     "Check anyway",
                     "Pick another",
                     false);
-                if (!continueAnyway) { await ShowLocalModelsAsync(); return; }
+                if (!continueAnyway) { await ShowLocalModelsAsync(showAll); return; }
             }
 
             if (!_localAi.IsControlReady)
@@ -150,10 +164,12 @@ namespace CodexNativeLite
             catch (InvalidOperationException) { }
         }
 
-        private static string HardwareSummary(LocalHardwareProfile hardware)
+        private static string HardwareSummary(LocalHardwareProfile hardware, int matchCount)
         {
             var builder = new StringBuilder();
-            builder.Append(Math.Round(hardware.TotalMemoryGb)).Append(" GB RAM");
+            builder.Append("Detected · ");
+            if (hardware.TotalMemoryGb > 0) builder.Append(Math.Round(hardware.TotalMemoryGb)).Append(" GB RAM");
+            else builder.Append("RAM unavailable");
             if (hardware.Gpus.Count > 0)
             {
                 builder.Append(" · ");
@@ -167,7 +183,8 @@ namespace CodexNativeLite
             }
             else builder.Append(" · no supported GPU found");
             if (hardware.FreeDiskGb > 0) builder.Append(" · ").Append(Math.Round(hardware.FreeDiskGb)).Append(" GB free");
-            builder.Append("\nLegion ranks the easy fits first; the embedded engine performs the final check before downloading.");
+            builder.Append("\n");
+            builder.Append(matchCount > 0 ? "Ranked for this PC. The embedded engine runs one final check before downloading." : "No suitable match found. You can still browse the full catalog.");
             return builder.ToString();
         }
 

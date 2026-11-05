@@ -70,6 +70,7 @@ namespace CodexNativeLite
         public double MinimumVramGb { get; set; }
         public bool NvidiaOnly { get; set; }
         public bool DeepSeekHardware { get; set; }
+        public double RecommendationWeight { get; set; }
 
         public string Rating(LocalHardwareProfile hardware)
         {
@@ -92,6 +93,45 @@ namespace CodexNativeLite
 
     public static class LocalModelCatalog
     {
+        public static List<LocalModelChoice> Rank(LocalHardwareProfile hardware)
+        {
+            List<LocalModelChoice> models = Create();
+            models.Sort(delegate(LocalModelChoice left, LocalModelChoice right)
+            {
+                int leftFit = FitGroup(left.Rating(hardware));
+                int rightFit = FitGroup(right.Rating(hardware));
+                if (leftFit != rightFit) return leftFit.CompareTo(rightFit);
+                double leftScore = MatchScore(left, hardware);
+                double rightScore = MatchScore(right, hardware);
+                int score = rightScore.CompareTo(leftScore);
+                return score != 0 ? score : left.DownloadGb.CompareTo(right.DownloadGb);
+            });
+            return models;
+        }
+
+        public static bool IsRecommended(LocalModelChoice model, LocalHardwareProfile hardware)
+        {
+            if (model == null) return false;
+            string rating = model.Rating(hardware);
+            return rating == "Comfortable" || rating == "Tight fit";
+        }
+
+        private static int FitGroup(string rating)
+        {
+            if (rating == "Comfortable" || rating == "Tight fit") return 0;
+            if (rating == "Needs more disk") return 1;
+            if (rating == "Not recommended") return 2;
+            if (rating == "Not supported") return 3;
+            return 4;
+        }
+
+        private static double MatchScore(LocalModelChoice model, LocalHardwareProfile hardware)
+        {
+            string rating = model.Rating(hardware);
+            double fitBonus = rating == "Comfortable" ? 30 : 0;
+            return model.RecommendationWeight + model.MinimumRamGb * 1.5 - model.DownloadGb * 0.35 + fitBonus;
+        }
+
         public static List<LocalModelChoice> Create()
         {
             return new List<LocalModelChoice>
@@ -100,57 +140,64 @@ namespace CodexNativeLite
                 {
                     Id = "gyro-s", Family = "gyro", Model = "Gyro-S", Name = "Gyro-S · smallest",
                     Summary = "The lightest general model. Slower and less precise, but much easier to fit.",
-                    LicenseName = "Gyro and Qwen model licenses", DownloadGb = 58.5, MinimumRamGb = 28, ComfortableRamGb = 36
+                    LicenseName = "Gyro and Qwen model licenses", DownloadGb = 58.5, MinimumRamGb = 28, ComfortableRamGb = 36,
+                    RecommendationWeight = 60
                 },
                 new LocalModelChoice
                 {
                     Id = "qwen36-q4", Family = "qwen36", Model = "UD-Q4_K_XL", Name = "Qwen 3.6 35B · balanced",
                     Summary = "A smaller, fast coding model and the friendliest starting point for a 32 GB PC.",
-                    LicenseName = "Apache 2.0 and Unsloth model terms", DownloadGb = 24, MinimumRamGb = 32, ComfortableRamGb = 40
+                    LicenseName = "Apache 2.0 and Unsloth model terms", DownloadGb = 24, MinimumRamGb = 32, ComfortableRamGb = 40,
+                    RecommendationWeight = 100
                 },
                 new LocalModelChoice
                 {
                     Id = "coder-iq1", Family = "coder", Model = "IQ1_M", Name = "Qwen 3.8 Coder · coding first",
                     Summary = "Keeps the experts chosen for code and agent work. Best when coding matters more than general chat.",
-                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 68, MinimumRamGb = 32, ComfortableRamGb = 40
+                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 68, MinimumRamGb = 32, ComfortableRamGb = 40,
+                    RecommendationWeight = 90
                 },
                 new LocalModelChoice
                 {
                     Id = "qwen38-q2", Family = "qwen", Model = "Q2_0", Name = "Qwen 3.8 Flash · quick",
                     Summary = "The fastest full-expert Qwen 3.8 pack.",
-                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 66, MinimumRamGb = 38, ComfortableRamGb = 48
+                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 66, MinimumRamGb = 38, ComfortableRamGb = 48,
+                    RecommendationWeight = 95
                 },
                 new LocalModelChoice
                 {
                     Id = "qwen38-iq2", Family = "qwen", Model = "IQ2_XS", Name = "Qwen 3.8 Flash · recommended",
                     Summary = "A good quality and speed middle ground.",
-                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 70, MinimumRamGb = 40, ComfortableRamGb = 48
+                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 70, MinimumRamGb = 40, ComfortableRamGb = 48,
+                    RecommendationWeight = 105
                 },
                 new LocalModelChoice
                 {
                     Id = "qwen38-iq3", Family = "qwen", Model = "IQ3_XXS", Name = "Qwen 3.8 Flash · quality",
                     Summary = "Higher quality, with a larger RAM footprint.",
-                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 76, MinimumRamGb = 47, ComfortableRamGb = 56
+                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 76, MinimumRamGb = 47, ComfortableRamGb = 56,
+                    RecommendationWeight = 110
                 },
                 new LocalModelChoice
                 {
                     Id = "qwen38-iq3s", Family = "qwen", Model = "IQ3_S", Name = "Qwen 3.8 Flash · best pack",
                     Summary = "The strongest original Qwen 3.8 pack in Strata's published comparison.",
-                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 82, MinimumRamGb = 55, ComfortableRamGb = 64
+                    LicenseName = "Qwen and ISTA-DASLab model terms", DownloadGb = 82, MinimumRamGb = 55, ComfortableRamGb = 64,
+                    RecommendationWeight = 115
                 },
                 new LocalModelChoice
                 {
                     Id = "deepseek-coder", Family = "deepseek41", Model = "ISTA-DAS-Coder", Name = "DeepSeek V4.1 Coder · huge",
                     Summary = "A very large coding model. NVMe storage strongly recommended.",
                     LicenseName = "MIT model weights and ISTA-DASLab terms", DownloadGb = 191, MinimumRamGb = 32, ComfortableRamGb = 64,
-                    MinimumVramGb = 12, DeepSeekHardware = true
+                    MinimumVramGb = 12, DeepSeekHardware = true, RecommendationWeight = 100
                 },
                 new LocalModelChoice
                 {
                     Id = "deepseek-200", Family = "deepseek41", Model = "ist-das-2.00bpw", Name = "DeepSeek V4.1 Flash · enormous",
                     Summary = "The full 2.00 bpw set. Built for machines with lots of RAM and NVMe space.",
                     LicenseName = "MIT model weights and ISTA-DASLab terms", DownloadGb = 257, MinimumRamGb = 46, ComfortableRamGb = 64,
-                    MinimumVramGb = 12, DeepSeekHardware = true
+                    MinimumVramGb = 12, DeepSeekHardware = true, RecommendationWeight = 105
                 }
             };
         }
