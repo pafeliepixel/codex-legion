@@ -146,6 +146,7 @@ namespace CodexNativeLite
                     foreach (ReasoningOption effort in selected.ReasoningEfforts)
                         if (String.Equals(effort.Id, _runtimeSettings.ReasoningEffort, StringComparison.OrdinalIgnoreCase)) effortAvailable = true;
                     if (!effortAvailable) _runtimeSettings.ReasoningEffort = selected.DefaultReasoningEffort;
+                    NormalizeParallelForModel(selected);
                 }
                 if (!_capabilities.Allows(Convert.ToString(_runtimeSettings.ApprovalPolicy), _runtimeSettings.SandboxMode))
                 {
@@ -375,6 +376,7 @@ namespace CodexNativeLite
                 _permissionButton.Content = PermissionGlyph() + "  " + _runtimeSettings.PermissionLabel;
                 _permissionButton.IsEnabled = _authenticated;
             }
+            UpdateParallelButton();
             UpdateAttachmentBadge();
         }
 
@@ -579,6 +581,7 @@ namespace CodexNativeLite
                     _runtimeSettings.Model = Convert.ToString(((Button)source).Tag);
                     ModelOption selected = SelectedModel();
                     _runtimeSettings.ReasoningEffort = selected == null ? null : selected.DefaultReasoningEffort;
+                    NormalizeParallelForModel(selected);
                     _settingsStore.Save(_runtimeSettings);
                     UpdateRuntimeButtons();
                     if (leavingLocal) PrepareNewThread();
@@ -716,6 +719,7 @@ namespace CodexNativeLite
             _runtimeSettings.Model = result;
             ModelOption selected = SelectedModel();
             _runtimeSettings.ReasoningEffort = selected == null ? null : selected.DefaultReasoningEffort;
+            NormalizeParallelForModel(selected);
             UpdateRuntimeButtons();
             _settingsStore.Save(_runtimeSettings);
             if (leavingLocal) PrepareNewThread();
@@ -958,6 +962,7 @@ namespace CodexNativeLite
             if (_client == null || String.IsNullOrWhiteSpace(_client.ThreadId)) return;
             List<ConversationMessage> history = await _client.LoadMessagesAsync(_client.ThreadId);
             _messages.Children.Clear();
+            ResetParallelTurnUi();
             foreach (ConversationMessage message in history) AddBubble(message.IsUser ? "You" : "Codex", message.Text, message.IsUser);
         }
 

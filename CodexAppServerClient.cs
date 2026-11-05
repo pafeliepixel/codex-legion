@@ -206,6 +206,8 @@ namespace CodexNativeLite
             if (settings != null)
             {
                 if (!String.IsNullOrWhiteSpace(settings.EffectiveModel)) parameters["model"] = settings.EffectiveModel;
+                parameters["multiAgentMode"] = settings.MultiAgentMode;
+                parameters["developerInstructions"] = settings.ParallelInstructions;
                 if (settings.UsesLocalModel)
                 {
                     if (String.IsNullOrWhiteSpace(settings.LocalBaseUrl))
@@ -376,7 +378,9 @@ namespace CodexNativeLite
             if (settings != null)
             {
                 if (!String.IsNullOrWhiteSpace(settings.EffectiveModel)) parameters["model"] = settings.EffectiveModel;
-                if (!String.IsNullOrWhiteSpace(settings.ReasoningEffort)) parameters["effort"] = settings.ReasoningEffort;
+                if (!String.IsNullOrWhiteSpace(settings.EffectiveReasoningEffort)) parameters["effort"] = settings.EffectiveReasoningEffort;
+                parameters["multiAgentMode"] = settings.MultiAgentMode;
+                parameters["collaborationMode"] = settings.CollaborationMode;
                 parameters["approvalPolicy"] = settings.ApprovalPolicy;
                 parameters["approvalsReviewer"] = settings.ApprovalsReviewer;
                 parameters["sandboxPolicy"] = settings.SandboxPolicy;

@@ -119,6 +119,7 @@ namespace CodexNativeLite
                 _runtimeSettings.LocalModelId = modelChoice.Id;
                 _runtimeSettings.LocalModelDirectory = _localAi.ModelDirectory;
                 _runtimeSettings.LocalBaseUrl = _localAi.BaseUrl;
+                _runtimeSettings.ParallelMode = "solo";
                 if (_runtimeSettings.ReasoningEffort != "none" && _runtimeSettings.ReasoningEffort != "low"
                     && _runtimeSettings.ReasoningEffort != "medium" && _runtimeSettings.ReasoningEffort != "high")
                     _runtimeSettings.ReasoningEffort = "medium";

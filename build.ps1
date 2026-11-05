@@ -60,6 +60,7 @@ $compilerArguments += @(
     (Join-Path $projectRoot 'GitService.cs')
     (Join-Path $projectRoot 'MainWindow.cs')
     (Join-Path $projectRoot 'MainWindowFeatures.cs')
+    (Join-Path $projectRoot 'MainWindowParallel.cs')
     (Join-Path $projectRoot 'ProfileSecurity.cs')
     (Join-Path $projectRoot 'VoiceCredentialStore.cs')
     (Join-Path $projectRoot 'WinMmAudio.cs')

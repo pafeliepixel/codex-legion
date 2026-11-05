@@ -28,7 +28,8 @@ namespace CodexNativeLite
                     Description = GetString(model, "description"),
                     DefaultReasoningEffort = GetString(model, "defaultReasoningEffort"),
                     IsDefault = GetBool(model, "isDefault"),
-                    SupportsImages = ContainsString(model, "inputModalities", "image")
+                    SupportsImages = ContainsString(model, "inputModalities", "image"),
+                    MultiAgentVersion = GetString(model, "multiAgentVersion")
                 };
                 foreach (object rawEffort in GetObjectList(model, "supportedReasoningEfforts"))
                 {

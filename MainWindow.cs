@@ -521,6 +521,12 @@ namespace CodexNativeLite
             _permissionButton.Padding = new Thickness(12, 8, 12, 8);
             _permissionButton.Click += OpenPermissionPopover;
             chips.Children.Add(_permissionButton);
+            _parallelButton = MakeButton("◇  Backup on request", false);
+            _parallelButton.FontSize = 11;
+            _parallelButton.Margin = new Thickness(7, 0, 0, 0);
+            _parallelButton.Padding = new Thickness(12, 8, 12, 8);
+            _parallelButton.Click += OpenParallelPopover;
+            chips.Children.Add(_parallelButton);
             _attachmentBadge = new TextBlock { Foreground = CoralBrush, FontSize = 10, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
             chips.Children.Add(_attachmentBadge);
             controls.Children.Add(chips);
@@ -632,6 +638,7 @@ namespace CodexNativeLite
                 _thread.Text = "New thread";
                 _thread.ToolTip = null;
                 _messages.Children.Clear();
+                ResetParallelTurnUi();
                 AddWelcome();
                 _composer.IsEnabled = true;
                 _sendButton.IsEnabled = true;
@@ -688,6 +695,7 @@ namespace CodexNativeLite
                 }
                 _composer.Clear();
                 AddBubble("You", text, true);
+                ResetParallelTurnUi();
                 BeginAssistantBubble();
                 var sentAttachments = new List<UserAttachment>(_attachments);
                 _attachments.Clear();
@@ -732,6 +740,15 @@ namespace CodexNativeLite
                     AddActivity("Browser", CodexAppServerClient.GetString(item, "tool") ?? "Using the managed browser");
                 else if (type == "reasoning")
                     AddActivity("Thinking", "Working through the problem");
+                else if (type == "collabAgentToolCall" || type == "subAgentActivity")
+                    HandleParallelItem(item, false);
+            }
+            else if (method == "item/completed")
+            {
+                var item = CodexAppServerClient.GetDictionary(parameters, "item");
+                string type = CodexAppServerClient.GetString(item, "type");
+                if (type == "collabAgentToolCall" || type == "subAgentActivity")
+                    HandleParallelItem(item, true);
             }
             else if (method == "item/commandExecution/outputDelta")
             {
@@ -771,6 +788,7 @@ namespace CodexNativeLite
                 var turn = CodexAppServerClient.GetDictionary(parameters, "turn");
                 string state = CodexAppServerClient.GetString(turn, "status") ?? "completed";
                 _lastCompletedTurnId = CodexAppServerClient.GetString(turn, "id");
+                CompleteParallelTurnUi();
                 SetBusy(false);
                 SetStatus(state == "completed" ? "Ready ✦" : "Turn " + state, state == "failed");
                 _streamingText = null;
@@ -897,6 +915,7 @@ namespace CodexNativeLite
         private void ShowLoginView()
         {
             _messages.Children.Clear();
+            ResetParallelTurnUi();
             var stage = new Grid
             {
                 MaxWidth = 690,
@@ -991,6 +1010,7 @@ namespace CodexNativeLite
         private void ShowProjectPickerView()
         {
             _messages.Children.Clear();
+            ResetParallelTurnUi();
             var panel = new StackPanel
             {
                 MaxWidth = 540,
@@ -1053,6 +1073,7 @@ namespace CodexNativeLite
             _thread.Text = "PIN required";
             SetStatus("Enter your weekly PIN", false);
             _messages.Children.Clear();
+            ResetParallelTurnUi();
 
             var panel = new StackPanel { MaxWidth = 440, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 70, 0, 20) };
             panel.Children.Add(new TextBlock
@@ -1114,6 +1135,7 @@ namespace CodexNativeLite
         private void ShowPinSetup()
         {
             _messages.Children.Clear();
+            ResetParallelTurnUi();
             var panel = new StackPanel { MaxWidth = 460, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 55, 0, 20) };
             panel.Children.Add(new TextBlock
             {
@@ -1208,6 +1230,7 @@ namespace CodexNativeLite
                     UpdateProjectDisplay();
                 }
                 _messages.Children.Clear();
+                ResetParallelTurnUi();
                 foreach (ConversationMessage message in history)
                     AddBubble(message.IsUser ? "You" : "Codex", message.Text, message.IsUser);
                 if (history.Count == 0) AddSystemCard("Empty conversation", "This thread does not contain saved messages yet.");
@@ -1614,6 +1637,7 @@ namespace CodexNativeLite
             _sendButton.Content = busy ? "↗" : "↑";
             _stopButton.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
             _composer.IsEnabled = canCompose;
+            UpdateParallelButton();
             if (!busy && canCompose) _composer.Focus();
         }
 

@@ -55,6 +55,7 @@
     <Compile Include="GitService.cs" />
     <Compile Include="MainWindow.cs" />
     <Compile Include="MainWindowFeatures.cs" />
+    <Compile Include="MainWindowParallel.cs" />
     <Compile Include="ProfileSecurity.cs" />
     <Compile Include="VoiceCredentialStore.cs" />
     <Compile Include="WinMmAudio.cs" />

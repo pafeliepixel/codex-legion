@@ -35,6 +35,8 @@ It is useful when you want:
 
 Codex Legion covers the everyday coding loop: persistent chats, streaming replies, model selection, a snap-to-level thinking slider, approval modes, commands, file changes, plans, reasoning summaries, web searches, token usage, and native diff cards.
 
+For bigger jobs, **Parallel work** can stay in one lane, call in backup only when you ask, or smartly split independent work across a small crew. Legion shows who joined and when they wrap up, then brings everything back into one answer—tiny teamwork, fewer tiny meetings.
+
 You can stop or steer an active turn, attach images, use local skills, inspect Git status, create managed worktrees, and reopen or organize previous chats. Approval, permission, question, and MCP prompts stay inside the same themed interface instead of falling back to generic Windows dialogs.
 
 When a task needs a real webpage, Legion can launch a visible managed Edge or Chrome window. It uses a separate browser profile, starts only on demand, and disappears when you close it or exit Legion. Reading and scrolling stay quiet; clicking and typing follow your approval mode. Your everyday browser tabs, cookies, and extensions are left alone.
@@ -105,13 +107,13 @@ Windows already includes most of what the project needs:
 To create the installers, point the packager at a Codex Windows runtime directory:
 
 ```powershell
-./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.6.2 -Zip
+./package.ps1 -RuntimeSource C:\path\to\codex-runtime -Version 0.7.0 -Zip
 ```
 
 The source stays simple: code-only WPF, the inbox .NET Framework compiler, PowerShell packaging, and no JavaScript dependency tree.
 
 ## Still growing
 
-Codex Legion is happily a work in progress: the core coding loop is real, while rich Markdown, full connector installation, and multi-window work are still wandering toward the party.
+Codex Legion is happily a work in progress: the core coding loop is real, while rich Markdown, full connector installation, and a few ambitious ideas are still wandering toward the party.
 
 Found a sharp corner, a sleepy button, or something that simply feels odd? Open an issue with a screenshot and a few words about what happened. Those reports are excellent fuel for the next build.

@@ -18,9 +18,23 @@ namespace CodexNativeLite
         public string DefaultReasoningEffort { get; set; }
         public bool IsDefault { get; set; }
         public bool SupportsImages { get; set; }
+        public string MultiAgentVersion { get; set; }
         public List<ReasoningOption> ReasoningEfforts { get; private set; }
 
         public ModelOption() { ReasoningEfforts = new List<ReasoningOption>(); }
+        public bool SupportsParallelWork
+        {
+            get { return MultiAgentVersion == "v1" || MultiAgentVersion == "v2"; }
+        }
+        public bool SupportsUltra
+        {
+            get
+            {
+                foreach (ReasoningOption effort in ReasoningEfforts)
+                    if (String.Equals(effort.Id, "ultra", StringComparison.OrdinalIgnoreCase)) return true;
+                return false;
+            }
+        }
         public override string ToString() { return String.IsNullOrWhiteSpace(DisplayName) ? Id : DisplayName; }
     }
 
@@ -33,15 +47,68 @@ namespace CodexNativeLite
         public string LocalModelId { get; set; }
         public string LocalModelDirectory { get; set; }
         public string LocalBaseUrl { get; set; }
+        public string ParallelMode { get; set; }
 
         public RuntimeSettings()
         {
             PermissionMode = "ask";
             ModelProvider = "openai";
+            ParallelMode = "asked";
         }
 
         public bool UsesLocalModel { get { return String.Equals(ModelProvider, "strata", StringComparison.OrdinalIgnoreCase); } }
         public string EffectiveModel { get { return UsesLocalModel ? "strata" : Model; } }
+        public string EffectiveReasoningEffort { get { return ParallelMode == "smart" ? "ultra" : ReasoningEffort; } }
+
+        public string ParallelLabel
+        {
+            get
+            {
+                if (ParallelMode == "solo") return "One lane";
+                if (ParallelMode == "smart") return "Smart split";
+                return "Backup on request";
+            }
+        }
+
+        public object MultiAgentMode
+        {
+            get
+            {
+                if (ParallelMode == "smart") return "proactive";
+                if (ParallelMode == "asked") return "explicitRequestOnly";
+                return new Dictionary<string, object> { { "custom", "Do not spawn subagents for this turn." } };
+            }
+        }
+
+        public string ParallelInstructions
+        {
+            get
+            {
+                if (ParallelMode == "smart")
+                    return "Use subagents when independent workstreams can materially improve speed or quality. Keep shared-file edits coordinated and combine the crew's findings into one clear final answer.";
+                if (ParallelMode == "asked")
+                    return "Do not spawn subagents unless the user explicitly asks for agents, delegation, a team, or parallel work.";
+                return "Work in one lane. Do not spawn subagents.";
+            }
+        }
+
+        public object CollaborationMode
+        {
+            get
+            {
+                return new Dictionary<string, object>
+                {
+                    { "mode", "default" },
+                    { "settings", new Dictionary<string, object>
+                        {
+                            { "model", EffectiveModel },
+                            { "reasoning_effort", EffectiveReasoningEffort },
+                            { "developer_instructions", ParallelInstructions }
+                        }
+                    }
+                };
+            }
+        }
 
         public string PermissionLabel
         {
